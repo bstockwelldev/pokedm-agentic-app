@@ -115,7 +115,7 @@ After running the script, edit `server/.env` to set your `AI_GATEWAY_API_KEY`, t
 The application is configured for deployment on Vercel:
 
 1. **GitHub Repository**: https://github.com/bstockwelldev/pokedm-agentic-app
-2. **Production URL**: https://agentic-app-eta.vercel.app
+2. **Production URL**: Check Vercel dashboard for the latest production URL
 
 ### Environment Variables
 
