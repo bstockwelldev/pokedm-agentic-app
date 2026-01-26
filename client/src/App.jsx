@@ -48,6 +48,24 @@ export default function App() {
         }),
       });
 
+      // Check if response is OK and is JSON
+      if (!response.ok) {
+        const text = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+        } catch {
+          errorData = { error: `Server error: ${response.status} ${response.statusText}`, details: text.substring(0, 200) };
+        }
+        throw new Error(errorData.error || errorData.details || `HTTP ${response.status}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Expected JSON but got ${contentType}. Response: ${text.substring(0, 200)}`);
+      }
+
       const data = await response.json();
 
       if (data.error) {

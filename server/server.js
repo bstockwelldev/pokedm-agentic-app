@@ -23,11 +23,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Error handler middleware - must be after routes
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Catch-all for undefined routes - return JSON
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found', path: req.path });
+});
+
+// Error handler middleware - must be last
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   if (!res.headersSent) {
-    res.status(500).json({ error: 'Server error', details: err.message });
+    res.status(500).json({ 
+      error: 'Server error', 
+      details: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 
