@@ -1,5 +1,5 @@
 // Vercel serverless function wrapper for Express app
-// Routes all /api/* requests to the Express server
+// This file is automatically served at /api/agent by Vercel
 
 import app from '../server/server.js';
 
