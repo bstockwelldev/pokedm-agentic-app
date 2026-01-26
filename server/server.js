@@ -23,6 +23,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Error handler middleware - must be after routes
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
 // Default model
 const DEFAULT_MODEL = process.env.LLM_MODEL || 'gemini-1.5-pro-latest';
 

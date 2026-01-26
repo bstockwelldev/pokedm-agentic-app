@@ -4,6 +4,5 @@
 import app from '../server/server.js';
 
 // Vercel serverless function handler
-export default async function handler(req, res) {
-  return app(req, res);
-}
+// @vercel/node expects the Express app as default export
+export default app;

@@ -1,19 +1,26 @@
 {
-  "buildCommand": "cd server && npm install && cd ../client && npm install && npm run build",
-  "outputDirectory": "client/dist",
-  "installCommand": "echo 'Skipping root install'",
-  "framework": null,
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/agent"
+      "src": "api/agent.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
   ],
-  "functions": {
-    "api/agent.js": {
-      "includeFiles": "server/**",
-      "memory": 1024,
-      "maxDuration": 60
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/agent"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/client/$1"
     }
-  }
+  ]
 }
