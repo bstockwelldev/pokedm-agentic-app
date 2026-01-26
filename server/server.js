@@ -31,14 +31,20 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// In Vercel, the serverless function is already at /api/agent, so routes should be relative
+// For local dev, we keep /api prefix; for Vercel, the function handles the /api prefix
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+const agentPath = isVercel ? '/' : '/api/agent';
+const chatPath = isVercel ? '/chat' : '/api/chat';
+
 /**
- * POST /api/agent
+ * POST /api/agent (or / in Vercel)
  *
  * Main agent endpoint that routes to appropriate specialized agent
  * Expects: { userInput, sessionId, model?, campaignId?, characterIds? }
  * Returns: { narration, choices, session, steps }
  */
-app.post('/api/agent', async (req, res) => {
+app.post(agentPath, async (req, res) => {
   try {
     const { userInput, sessionId, model, campaignId, characterIds } = req.body || {};
 
@@ -111,7 +117,7 @@ app.post('/api/agent', async (req, res) => {
 });
 
 // Keep /api/chat for backward compatibility (optional)
-app.post('/api/chat', async (req, res) => {
+app.post(chatPath, async (req, res) => {
   res.status(410).json({
     error: 'This endpoint is deprecated. Use /api/agent instead.',
     migration: 'Update your client to use POST /api/agent with { userInput, sessionId, model? }',
