@@ -108,6 +108,47 @@ After running the script, edit `server/.env` to set your `AI_GATEWAY_API_KEY`, t
   agent when it returns a plain text response or the step limit is reached
   【261109857611989†L398-L409】.
 
+## Deployment
+
+### Vercel Deployment
+
+The application is configured for deployment on Vercel:
+
+1. **GitHub Repository**: https://github.com/bstockwelldev/pokedm-agentic-app
+2. **Production URL**: https://agentic-app-eta.vercel.app
+
+### Environment Variables
+
+Configure these in your Vercel project settings:
+
+- `GOOGLE_GENERATIVE_AI_API_KEY` - Your Gemini API key (required)
+- `GEMINI_API_KEY` - Backward compatibility (optional)
+- `LLM_MODEL` - Default model (defaults to `gemini-1.5-pro-latest`)
+
+### Deploying
+
+Using Vercel CLI:
+
+```bash
+# Link project (first time)
+vercel link
+
+# Deploy to preview
+vercel deploy
+
+# Deploy to production
+vercel deploy --prod
+```
+
+Or connect your GitHub repository in the Vercel dashboard for automatic deployments on push.
+
+### Session Storage Note
+
+In Vercel serverless functions, file-based session storage is ephemeral. For production, consider:
+- Vercel KV (Redis) for persistent storage
+- External database (Supabase, etc.)
+- Or document that sessions are temporary in serverless environment
+
 ## Notes
 
 * This template uses an Express server for clarity.  In production on Vercel
