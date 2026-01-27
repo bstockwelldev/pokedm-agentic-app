@@ -9,6 +9,20 @@
       }
     },
     {
+      "src": "api/models.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["server/**"]
+      }
+    },
+    {
+      "src": "api/import.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["server/**"]
+      }
+    },
+    {
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
@@ -17,6 +31,14 @@
     }
   ],
   "routes": [
+    {
+      "src": "/api/models",
+      "dest": "/api/models"
+    },
+    {
+      "src": "/api/import",
+      "dest": "/api/import"
+    },
     {
       "src": "/api/(.*)",
       "dest": "/api/agent"

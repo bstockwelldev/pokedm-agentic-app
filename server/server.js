@@ -40,11 +40,20 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+
+// In Vercel, the serverless function is already at /api/agent, so routes should be relative
+// For local dev, we keep /api prefix; for Vercel, the function handles the /api prefix
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+const agentPath = isVercel ? '/' : '/api/agent';
+const chatPath = isVercel ? '/chat' : '/api/chat';
+
 /**
  * GET /api/models
  * 
  * Fetch available models from all providers
  * Returns: { models: Array<{id, name, provider}> }
+ * 
+ * Note: In Vercel, when served from api/models.js, the path is preserved as /api/models
  */
 app.get('/api/models', async (req, res) => {
   try {
@@ -76,12 +85,6 @@ app.get('/api/models', async (req, res) => {
     }
   }
 });
-
-// In Vercel, the serverless function is already at /api/agent, so routes should be relative
-// For local dev, we keep /api prefix; for Vercel, the function handles the /api prefix
-const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
-const agentPath = isVercel ? '/' : '/api/agent';
-const chatPath = isVercel ? '/chat' : '/api/chat';
 
 /**
  * POST /api/agent (or / in Vercel)
@@ -176,6 +179,8 @@ app.post(agentPath, async (req, res) => {
  * Import session data from export file
  * Expects: { session_data?, messages?, characters?, campaign?, custom_pokemon?, continuity?, options }
  * Returns: { sessionId, session, imported_components, warnings }
+ * 
+ * Note: In Vercel, when served from api/import.js, the path is preserved as /api/import
  */
 app.post('/api/import', async (req, res) => {
   try {
