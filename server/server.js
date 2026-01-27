@@ -274,8 +274,9 @@ app.post('/api/import', async (req, res) => {
       const campaignId = session_data?.campaign_id || campaign?.campaign_id || null;
       const characterIds = session_data?.character_ids || characters?.map((c) => c.character_id).filter(Boolean) || [];
       newSession = createSession(campaignId, characterIds);
+    }
 
-    // Merge imported components
+    // Merge imported components (applies to both legacy and standard imports)
     if (importComponents.includes('session') && session_data) {
       // Merge session data, preserving new session_id
       const originalSessionId = newSession.session.session_id;
