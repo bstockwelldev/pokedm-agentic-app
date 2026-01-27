@@ -187,7 +187,7 @@ export default function ImportDrawer({
               episode_title: 'The Journey Begins',
               scene: {
                 location_id: 'route_2_southern_approach',
-                description: "You're standing at the edge of Route 2, looking out over the Skyfall Expanse. The wind is gentle today, perfect for travel. Professor Liora's words echo in your mind: 'The islands hold many secrets. Trust your Pokémon, and they'll guide you.'",
+                description: 'You\'re standing at the edge of Route 2, looking out over the Skyfall Expanse. The wind is gentle today, perfect for travel. Professor Liora\'s words echo in your mind: \'The islands hold many secrets. Trust your Pokémon, and they\'ll guide you.\'',
                 mood: 'adventurous',
               },
               current_objectives: [
@@ -201,7 +201,7 @@ export default function ImportDrawer({
                   objective_id: 'obj_meet_wind_wardens',
                   description: 'Learn about the Wind Wardens faction',
                   status: 'active',
-                  notes: 'Optional: Discover more about the region's protectors',
+                  notes: 'Optional: Discover more about the region\'s protectors',
                 },
               ],
               encounters: [],
@@ -329,7 +329,7 @@ export default function ImportDrawer({
                   location_id: 'skysong_harbor',
                   name: 'Skysong Harbor',
                   type: 'town',
-                  description: 'A bustling port town built on the largest floating island. The harbor is filled with wind-powered ships and gliders. Professor Liora's research lab overlooks the harbor, studying the unique Pokémon of the region.',
+                  description: 'A bustling port town built on the largest floating island. The harbor is filled with wind-powered ships and gliders. Professor Liora\'s research lab overlooks the harbor, studying the unique Pokémon of the region.',
                   known: true,
                 },
                 {
