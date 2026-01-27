@@ -40,6 +40,13 @@ export default function ToolRunMessage({ message, index, ...props }) {
   if (toolExecutions.length === 0) {
     // Fallback for old message format
     const toolInfo = message.tool || null;
+    
+    // If there's no tool info and no tool executions, return null
+    // (This component should only be rendered when there are actual tool calls)
+    if (!toolInfo) {
+      return null;
+    }
+    
     return (
       <MessageCard
         role="system"
@@ -55,20 +62,14 @@ export default function ToolRunMessage({ message, index, ...props }) {
             <span className="text-purple-300">🔧</span>
             <strong className="text-purple-300">Tool Execution</strong>
           </div>
-          {toolInfo ? (
-            <div className="text-sm text-muted">
-              <div>Tool: {toolInfo.name || toolInfo.tool || 'Unknown'}</div>
-              {toolInfo.status && (
-                <div className="mt-1">
-                  Status: <span className="text-foreground">{toolInfo.status}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-sm text-muted italic">
-              No tool execution data available
-            </div>
-          )}
+          <div className="text-sm text-muted">
+            <div>Tool: {toolInfo.name || toolInfo.tool || 'Unknown'}</div>
+            {toolInfo.status && (
+              <div className="mt-1">
+                Status: <span className="text-foreground">{toolInfo.status}</span>
+              </div>
+            )}
+          </div>
         </div>
       </MessageCard>
     );

@@ -1,0 +1,418 @@
+{
+  "schema_version": "1.1.0",
+  "dex": {
+    "canon_cache": {
+      "pokemon": {},
+      "moves": {},
+      "abilities": {},
+      "types": {},
+      "species": {},
+      "evolution_chains": {},
+      "items": {},
+      "locations": {},
+      "generations": {}
+    },
+    "cache_policy": {
+      "source": "pokeapi",
+      "gen_range": "1-9",
+      "ttl_hours": 168,
+      "max_entries_per_kind": 5000,
+      "notes": "Canon reference-only cache; never treated as player-owned state."
+    }
+  },
+  "custom_dex": {
+    "pokemon": {},
+    "ruleset_flags": {
+      "allow_new_species": false
+    },
+    "notes": "Custom Pokémon stored alongside canon, never overwriting canon entries."
+  },
+  "campaign": {
+    "campaign_id": "celestide_isles",
+    "region": {
+      "name": "Celestide Isles",
+      "theme": "wind, celestial energy, environmental balance",
+      "description": "A floating archipelago where wind currents carry celestial energy. The islands are connected by natural bridges and floating platforms. The region is known for its unique Pokémon that have adapted to the high-altitude, wind-swept environment.",
+      "environment_tags": [
+        "wind",
+        "celestial energy",
+        "environmental balance",
+        "floating islands",
+        "high altitude"
+      ],
+      "climate": "clear_wind"
+    },
+    "locations": [
+      {
+        "location_id": "skysong_harbor",
+        "name": "Skysong Harbor",
+        "type": "town",
+        "description": "A bustling port town built on the largest floating island. The harbor is filled with wind-powered ships and gliders. Professor Liora's research lab overlooks the harbor, studying the unique Pokémon of the region.",
+        "known": true
+      },
+      {
+        "location_id": "route_2_southern_approach",
+        "name": "Route 2 - Southern Approach",
+        "type": "route",
+        "description": "A scenic route connecting Skysong Harbor to the Skyfall Expanse. Wind currents make travel easier, and wild Pokémon are more active during certain times of day.",
+        "known": true
+      },
+      {
+        "location_id": "skyfall_expanse",
+        "name": "Skyfall Expanse",
+        "type": "route",
+        "description": "A vast open area between islands where trainers can practice battling. The wind here is strong, making it a popular spot for Flying-type Pokémon.",
+        "known": false
+      }
+    ],
+    "factions": [
+      {
+        "faction_id": "wind_wardens",
+        "name": "Wind Wardens",
+        "philosophy": "Protect the natural wind currents and celestial energy balance",
+        "tone": "idealistic",
+        "known_members": [
+          {
+            "npc_id": "ranger_kai",
+            "role": "ranger",
+            "notes": "Leader of the Wind Wardens"
+          }
+        ],
+        "status": "active"
+      }
+    ],
+    "recurring_npcs": [
+      {
+        "npc_id": "professor_liora",
+        "name": "Professor Liora",
+        "role": "researcher",
+        "disposition": "friendly",
+        "home_location_id": "skysong_harbor",
+        "notes": "Expert on Celestide Isles Pokémon and their adaptations to wind and altitude"
+      },
+      {
+        "npc_id": "assistant_kael",
+        "name": "Assistant Kael",
+        "role": "researcher",
+        "disposition": "friendly",
+        "home_location_id": "skysong_harbor",
+        "notes": "Helps Professor Liora with research and provides starter Pokémon to new trainers"
+      }
+    ],
+    "world_facts": [
+      {
+        "fact_id": "celestial_alignment",
+        "title": "Celestial Alignment",
+        "description": "Every 100 years, the celestial bodies align perfectly over the Celestide Isles, causing a surge in Pokémon activity and rare encounters.",
+        "tags": [
+          "global_effect",
+          "celestial",
+          "rare_encounters"
+        ],
+        "revealed": true
+      },
+      {
+        "fact_id": "wind_currents",
+        "title": "Wind Currents",
+        "description": "The wind currents in the region are currently favorable, making travel between islands easier and faster.",
+        "tags": [
+          "global_effect",
+          "travel",
+          "wind"
+        ],
+        "revealed": true
+      }
+    ]
+  },
+  "characters": [
+    {
+      "character_id": "trainer_alex",
+      "trainer": {
+        "name": "Alex",
+        "age_group": "teen",
+        "background": "Aspiring Pokémon researcher who just arrived in Celestide Isles",
+        "personality_traits": [
+          "curious",
+          "brave",
+          "caring"
+        ],
+        "bonds": [
+          {
+            "bond_id": "bond_starter",
+            "target": "pokemon_pikachu_001",
+            "description": "First Pokémon partner, received from Professor Liora"
+          }
+        ]
+      },
+      "inventory": {
+        "items": [
+          {
+            "kind": "canon",
+            "ref": "canon:potion",
+            "quantity": 3,
+            "notes": "Basic healing item"
+          },
+          {
+            "kind": "canon",
+            "ref": "canon:antidote",
+            "quantity": 2,
+            "notes": "Cures poison status"
+          }
+        ],
+        "pokeballs": {
+          "poke_ball": 10,
+          "great_ball": 0,
+          "ultra_ball": 0
+        },
+        "key_items": [
+          {
+            "kind": "canon",
+            "ref": "canon:pokedex",
+            "notes": "Pokédex from Professor Liora"
+          }
+        ]
+      },
+      "pokemon_party": [
+        {
+          "instance_id": "pokemon_pikachu_001",
+          "species_ref": {
+            "kind": "canon",
+            "ref": "canon:pikachu"
+          },
+          "nickname": "Sparky",
+          "form_ref": {
+            "kind": "none"
+          },
+          "typing": [
+            "Electric"
+          ],
+          "level": 5,
+          "ability": {
+            "kind": "canon",
+            "name": "static",
+            "description": "Contact with this Pokémon may cause paralysis"
+          },
+          "moves": [
+            {
+              "kind": "canon",
+              "name": "thunder-shock",
+              "type": "Electric",
+              "category": "special",
+              "pp": 30,
+              "accuracy": 100,
+              "power": 40,
+              "simple_effect": "A weak electric attack"
+            },
+            {
+              "kind": "canon",
+              "name": "growl",
+              "type": "Normal",
+              "category": "status",
+              "pp": 40,
+              "accuracy": 100,
+              "power": null,
+              "simple_effect": "Lowers the target's Attack stat"
+            }
+          ],
+          "stats": {
+            "hp": {
+              "current": 20,
+              "max": 20
+            },
+            "attack": 20,
+            "defense": 15,
+            "special_attack": 25,
+            "special_defense": 20,
+            "speed": 30
+          },
+          "status_conditions": [],
+          "friendship": 70,
+          "known_info": {
+            "met_at": {
+              "location_id": "skysong_harbor",
+              "session_id": "session_example_001"
+            },
+            "lore_learned": [
+              "Pikachu is an Electric-type Pokémon",
+              "Pikachu evolves from Pichu with high friendship"
+            ],
+            "seen_moves": [
+              "thunder-shock",
+              "growl"
+            ]
+          },
+          "notes": "Starter Pokémon received from Professor Liora. Very friendly and eager to explore."
+        }
+      ],
+      "achievements": [
+        {
+          "achievement_id": "achievement_starter",
+          "title": "First Partner",
+          "description": "Received your first Pokémon from Professor Liora",
+          "earned_in_session_id": "session_example_001"
+        }
+      ],
+      "progression": {
+        "badges": 0,
+        "milestones": [
+          {
+            "milestone_id": "milestone_arrival",
+            "title": "Arrived in Celestide Isles",
+            "description": "Started your adventure in the floating archipelago",
+            "completed": true
+          },
+          {
+            "milestone_id": "milestone_starter",
+            "title": "Obtained Starter Pokémon",
+            "description": "Received Pikachu from Professor Liora",
+            "completed": true
+          },
+          {
+            "milestone_id": "milestone_first_route",
+            "title": "Explore Route 2",
+            "description": "Travel to Skyfall Expanse and discover new Pokémon",
+            "completed": false
+          }
+        ]
+      }
+    }
+  ],
+  "session": {
+    "session_id": "session_example_001",
+    "campaign_id": "celestide_isles",
+    "character_ids": [
+      "trainer_alex"
+    ],
+    "episode_title": "The Journey Begins",
+    "scene": {
+      "location_id": "route_2_southern_approach",
+      "description": "You're standing at the edge of Route 2, looking out over the Skyfall Expanse. The wind is gentle today, perfect for travel. Professor Liora's words echo in your mind: 'The islands hold many secrets. Trust your Pokémon, and they'll guide you.'",
+      "mood": "adventurous"
+    },
+    "current_objectives": [
+      {
+        "objective_id": "obj_explore_route_2",
+        "description": "Explore Route 2 and reach Skyfall Expanse",
+        "status": "active",
+        "notes": "First major exploration objective"
+      },
+      {
+        "objective_id": "obj_meet_wind_wardens",
+        "description": "Learn about the Wind Wardens faction",
+        "status": "active",
+        "notes": "Optional: Discover more about the region's protectors"
+      }
+    ],
+    "encounters": [],
+    "battle_state": {
+      "active": false,
+      "round": 0,
+      "turn_order": [],
+      "field_effects": []
+    },
+    "fail_soft_flags": {
+      "recent_failures": 0,
+      "recent_successes": 0,
+      "difficulty_adjusted": false,
+      "party_confidence": "medium",
+      "auto_scaled_last_encounter": false
+    },
+    "player_choices": {
+      "options_presented": [],
+      "safe_default": "Continue along Route 2"
+    },
+    "controls": {
+      "pause_requested": false,
+      "skip_requested": false,
+      "explain_requested": false
+    },
+    "event_log": [
+      {
+        "t": "2026-01-27T00:00:00.000Z",
+        "kind": "scene",
+        "summary": "Arrived in Skysong Harbor",
+        "details": "Met Professor Liora and received starter Pokémon Pikachu"
+      },
+      {
+        "t": "2026-01-27T00:15:00.000Z",
+        "kind": "discovery",
+        "summary": "Received Pokédex from Professor Liora",
+        "details": "The Pokédex will help track discovered Pokémon in the region"
+      },
+      {
+        "t": "2026-01-27T00:30:00.000Z",
+        "kind": "scene",
+        "summary": "Started journey on Route 2",
+        "details": "Left Skysong Harbor and began exploring the Southern Approach"
+      }
+    ]
+  },
+  "continuity": {
+    "timeline": [
+      {
+        "session_id": "session_example_001",
+        "episode_title": "The Journey Begins",
+        "summary": "Arrived in Celestide Isles and met Professor Liora",
+        "canonized": true,
+        "date": "2026-01-27",
+        "tags": [
+          "arrival",
+          "meeting"
+        ]
+      },
+      {
+        "session_id": "session_example_001",
+        "episode_title": "The Journey Begins",
+        "summary": "Received starter Pokémon Pikachu (nicknamed Sparky)",
+        "canonized": true,
+        "date": "2026-01-27",
+        "tags": [
+          "pokemon",
+          "starter"
+        ]
+      },
+      {
+        "session_id": "session_example_001",
+        "episode_title": "The Journey Begins",
+        "summary": "Began exploration of Route 2 - Southern Approach",
+        "canonized": true,
+        "date": "2026-01-27",
+        "tags": [
+          "exploration",
+          "route"
+        ]
+      }
+    ],
+    "discovered_pokemon": [
+      {
+        "species_ref": {
+          "kind": "canon",
+          "ref": "canon:pikachu"
+        },
+        "form_ref": {
+          "kind": "none"
+        },
+        "first_seen_location_id": "skysong_harbor",
+        "first_seen_session_id": "session_example_001",
+        "notes": "Starter Pokémon received from Professor Liora"
+      }
+    ],
+    "unresolved_hooks": [
+      {
+        "hook_id": "hook_wind_wardens",
+        "description": "Learn more about the Wind Wardens and their mission",
+        "urgency": "low",
+        "introduced_in_session_id": "session_example_001",
+        "linked_faction_id": "wind_wardens",
+        "status": "open"
+      }
+    ],
+    "recaps": []
+  },
+  "state_versioning": {
+    "current_version": "1.1.0",
+    "previous_versions": [],
+    "migration_notes": "Example campaign session - ready for import and continuation",
+    "last_migrated_at": "2026-01-27T00:00:00.000Z"
+  }
+}
