@@ -41,7 +41,7 @@ Look up the requested Pokémon data and return simplified, kid-friendly informat
 
   try {
     const result = await generateText({
-      model: getModel(modelName),
+      model: await getModel(modelName),
       prompt: fullPrompt,
       tools: toolsWithSession,
       maxSteps: config.maxSteps,

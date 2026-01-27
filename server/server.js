@@ -261,6 +261,10 @@ app.post('/api/import', async (req, res) => {
     const { isLegacyFormat, migrateExampleToSchema } = await import('./lib/migrateSession.js');
     const isLegacy = session_data && isLegacyFormat(session_data);
 
+    // Extract campaignId and characterIds before conditional logic
+    const campaignId = session_data?.campaign_id || campaign?.campaign_id || null;
+    const characterIds = session_data?.character_ids || characters?.map((c) => c.character_id).filter(Boolean) || [];
+    
     let newSession;
     
     if (isLegacy) {
@@ -271,8 +275,6 @@ app.post('/api/import', async (req, res) => {
       migrated = true;
     } else {
       // Standard import flow
-      const campaignId = session_data?.campaign_id || campaign?.campaign_id || null;
-      const characterIds = session_data?.character_ids || characters?.map((c) => c.character_id).filter(Boolean) || [];
       newSession = createSession(campaignId, characterIds);
     }
 

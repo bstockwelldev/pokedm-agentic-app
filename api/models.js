@@ -24,11 +24,19 @@ export default async function handler(req, res) {
   
   // Lazy load the Express app using dynamic import
   if (!app) {
-    const serverModule = await import('../server/server.js');
-    app = serverModule.default;
-    // #region agent log
-    console.log('[DEBUG] api/models.js: Express app imported', { hasApp: !!app, appType: typeof app, hypothesisId: 'C' });
-    // #endregion
+    try {
+      const serverModule = await import('../server/server.js');
+      app = serverModule.default;
+      // #region agent log
+      console.log('[DEBUG] api/models.js: Express app imported', { hasApp: !!app, appType: typeof app, hypothesisId: 'C' });
+      // #endregion
+    } catch (error) {
+      console.error('[ERROR] api/models.js: Failed to import server', error);
+      return res.status(500).json({ 
+        error: 'Server initialization failed', 
+        details: error.message 
+      });
+    }
   }
   
   // Call Express app

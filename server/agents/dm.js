@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { getModel } from '../lib/modelProvider.js';
 import { dmPrompt } from '../prompts/dm.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 import { updateSessionState } from './state.js';
@@ -29,7 +29,7 @@ Provide narration and 2-4 choices for the players.`;
 
   try {
     const result = await generateText({
-      model: getModel(modelName),
+      model: await getModel(modelName),
       prompt: fullPrompt,
       maxSteps: config.maxSteps,
     });

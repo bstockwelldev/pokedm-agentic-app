@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { getModel } from '../lib/modelProvider.js';
 import { routerPrompt } from '../prompts/router.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 
@@ -13,7 +13,7 @@ export async function routeIntent(userInput, sessionState, model = null) {
 
   try {
     const result = await generateText({
-      model: getModel(modelName),
+      model: await getModel(modelName),
       prompt: routerPrompt.replace('{userInput}', userInput),
       maxSteps: config.maxSteps,
     });

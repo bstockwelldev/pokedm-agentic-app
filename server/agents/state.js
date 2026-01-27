@@ -29,7 +29,7 @@ Analyze the request and determine what state updates are needed. Return a JSON o
 
   try {
     const result = await generateText({
-      model: getModel(modelName),
+      model: await getModel(modelName),
       prompt: fullPrompt,
       maxSteps: config.maxSteps,
     });

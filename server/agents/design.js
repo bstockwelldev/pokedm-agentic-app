@@ -54,7 +54,7 @@ Create the custom Pokémon following all KB rules. Use the createCustomPokemon t
 
   try {
     const result = await generateText({
-      model: getModel(modelName),
+      model: await getModel(modelName),
       prompt: fullPrompt,
       tools: toolsWithSession,
       maxSteps: config.maxSteps,

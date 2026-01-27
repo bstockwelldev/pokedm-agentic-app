@@ -4,13 +4,25 @@
  */
 
 import { google } from '@ai-sdk/google';
-import { groq } from '@ai-sdk/groq';
+
+// Lazy load Groq to avoid errors if package is not installed
+let groqModule = null;
+async function getGroq() {
+  if (!groqModule) {
+    try {
+      groqModule = await import('@ai-sdk/groq');
+    } catch (error) {
+      throw new Error(`Groq SDK not available: ${error.message}. Install @ai-sdk/groq package to use Groq models.`);
+    }
+  }
+  return groqModule.groq;
+}
 
 /**
  * Get model instance based on model identifier
  * Supports: google/gemini-*, groq/llama-*, groq/mixtral-*
  */
-export function getModel(modelName) {
+export async function getModel(modelName) {
   if (!modelName) {
     throw new Error('Model name is required');
   }
@@ -18,6 +30,7 @@ export function getModel(modelName) {
   // Check if it's a Groq model
   if (modelName.startsWith('groq/') || modelName.startsWith('llama-') || modelName.startsWith('mixtral-')) {
     const groqModelName = modelName.replace('groq/', '');
+    const groq = await getGroq();
     return groq(groqModelName);
   }
 
