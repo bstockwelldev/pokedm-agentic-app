@@ -32,7 +32,60 @@ export async function parseImportFile(file) {
 }
 
 /**
+ * Check if data is a raw session format (not export format)
+ * @param {object} data - Import data
+ * @returns {boolean} True if raw session format
+ */
+export function isRawSessionFormat(data) {
+  // Raw session format has schema_version and session fields at root
+  return (
+    (data.schema_version || data.session?.session_id) &&
+    !data.export_version &&
+    !data.components
+  );
+}
+
+/**
+ * Convert raw session format to export format
+ * @param {object} rawSession - Raw session data (full session object with schema_version, dex, etc.)
+ * @returns {object} Export format data
+ */
+export function convertRawSessionToExportFormat(rawSession) {
+  // Extract components from raw session
+  const components = {
+    session: rawSession.session || null,
+    messages: null, // Raw sessions don't include messages
+    characters: rawSession.characters || null,
+    campaign: rawSession.campaign || null,
+    custom_pokemon: rawSession.custom_dex?.pokemon || null,
+    continuity: rawSession.continuity || null,
+  };
+
+  // Build list of exported components
+  const exportedComponents = [];
+  if (components.session) exportedComponents.push('session');
+  if (components.characters && components.characters.length > 0) exportedComponents.push('characters');
+  if (components.campaign) exportedComponents.push('campaign');
+  if (components.custom_pokemon && Object.keys(components.custom_pokemon).length > 0) exportedComponents.push('custom_pokemon');
+  if (components.continuity) exportedComponents.push('continuity');
+
+  return {
+    export_version: SUPPORTED_EXPORT_VERSION,
+    exported_at: new Date().toISOString(),
+    session_id: rawSession.session?.session_id || null,
+    components,
+    metadata: {
+      exported_components: exportedComponents,
+      app_version: '1.0.0',
+      converted_from_raw: true,
+      schema_version: rawSession.schema_version || null,
+    },
+  };
+}
+
+/**
  * Validate import data structure
+ * Supports both export format and raw session format
  * @param {object} data - Import data
  * @returns {object} Validation result with errors and warnings
  */
@@ -40,7 +93,25 @@ export function validateImportData(data) {
   const errors = [];
   const warnings = [];
 
-  // Check required fields
+  // Check if this is raw session format
+  if (isRawSessionFormat(data)) {
+    // Validate raw session format
+    if (!data.session || typeof data.session !== 'object') {
+      errors.push('Invalid raw session format: missing session object');
+    }
+    if (!data.session?.session_id) {
+      errors.push('Invalid raw session format: missing session_id');
+    }
+    warnings.push('Raw session format detected - will be converted to export format');
+    return {
+      valid: errors.length === 0,
+      errors,
+      warnings,
+      isRawFormat: true,
+    };
+  }
+
+  // Validate export format
   if (!data.export_version) {
     errors.push('Missing export_version field');
   } else if (data.export_version !== SUPPORTED_EXPORT_VERSION) {
@@ -81,6 +152,7 @@ export function validateImportData(data) {
     valid: errors.length === 0,
     errors,
     warnings,
+    isRawFormat: false,
   };
 }
 
@@ -196,11 +268,17 @@ export async function importSession(importData) {
 
 /**
  * Get available components from import data
- * @param {object} data - Import data
+ * Handles both export format and raw session format
+ * @param {object} data - Import data (may be raw session or export format)
  * @returns {object} Available components status
  */
 export function getAvailableImportComponents(data) {
-  if (!data.components) {
+  // Convert raw session format if needed
+  const exportData = isRawSessionFormat(data) 
+    ? convertRawSessionToExportFormat(data)
+    : data;
+
+  if (!exportData.components) {
     return {
       session: false,
       messages: false,
@@ -212,11 +290,11 @@ export function getAvailableImportComponents(data) {
   }
 
   return {
-    session: !!data.components.session,
-    messages: !!(data.components.messages && data.components.messages.length > 0),
-    characters: !!(data.components.characters && data.components.characters.length > 0),
-    campaign: !!data.components.campaign,
-    customPokemon: !!(data.components.custom_pokemon && Object.keys(data.components.custom_pokemon).length > 0),
-    continuity: !!data.components.continuity,
+    session: !!exportData.components.session,
+    messages: !!(exportData.components.messages && exportData.components.messages.length > 0),
+    characters: !!(exportData.components.characters && exportData.components.characters.length > 0),
+    campaign: !!exportData.components.campaign,
+    customPokemon: !!(exportData.components.custom_pokemon && Object.keys(exportData.components.custom_pokemon).length > 0),
+    continuity: !!exportData.components.continuity,
   };
 }

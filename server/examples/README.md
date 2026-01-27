@@ -8,7 +8,13 @@ This directory contains example campaign sessions that can be imported into the 
 
 ### `example-campaign-session.json`
 
-A complete, schema-compliant example session for the **Celestide Isles** campaign. This session demonstrates:
+A complete, schema-compliant example session for the **Celestide Isles** campaign in **raw session format** (schema v1.1.0). This session demonstrates:
+
+### `example-campaign-session-export.json`
+
+The same example session in **export format** (compatible with the Import drawer). Use this format if you want to match the standard export structure.
+
+**Note:** The Import system now supports both formats automatically - you can import either file and it will work!
 
 - ✅ Full schema compliance (v1.1.0)
 - ✅ Complete campaign setup with region, locations, NPCs, and factions

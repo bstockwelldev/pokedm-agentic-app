@@ -57,11 +57,20 @@ export default function App() {
           console.log(`[CLIENT] Fetched ${models.length} models: ${geminiModels.length} Gemini, ${groqModels.length} Groq`);
           console.log('[CLIENT] All model IDs:', models.map(m => m.id).join(', '));
           console.log('[CLIENT] Groq model IDs:', groqModels.map(m => m.id).join(', '));
-          setAvailableModels(models);
+          
+          // Filter and normalize models
+          const filteredModels = filterValidModels(models);
+          console.log(`[CLIENT] Filtered to ${filteredModels.length} valid models`);
+          
+          setAvailableModels(filteredModels.length > 0 ? filteredModels : models);
           // Set default model if available
-          if (models.length > 0) {
-            const defaultModel = models.find((m) => m.id === 'gemini-2.5-flash') || models[0];
+          if (filteredModels.length > 0) {
+            const defaultModel = filteredModels.find((m) => m.id === 'gemini-2.5-flash') || filteredModels[0];
             setModel(defaultModel.id);
+          } else if (models.length > 0) {
+            const defaultModel = models.find((m) => m.id === 'gemini-2.5-flash') || models[0];
+            const normalized = normalizeModelName(defaultModel.id);
+            setModel(normalized || defaultModel.id);
           }
         } else {
           console.error('[CLIENT] Failed to fetch models:', response.status, response.statusText);
@@ -144,15 +153,27 @@ export default function App() {
         // Extract request ID from headers if available
         const requestId = response.headers.get('X-Request-ID') || errorData.requestId;
         
-        // Enhanced error handling for rate limiting
-        const isRateLimit = response.status === 429 || errorData.error?.toLowerCase().includes('rate limit');
+        // Enhanced error handling for rate limiting and model errors
+        const isRateLimit = response.status === 429 || 
+                           errorData.errorType === 'rate_limit' ||
+                           errorData.error?.toLowerCase().includes('rate limit') ||
+                           errorData.details?.toLowerCase().includes('quota exceeded');
+        const isModelError = errorData.errorType === 'model_not_found' ||
+                            errorData.error?.toLowerCase().includes('model') && errorData.error?.toLowerCase().includes('not found');
+        
+        // Use user-friendly message if available
+        const userMessage = errorData.userMessage || errorData.error || errorData.details || `HTTP ${response.status}`;
         
         setError({
           message: isRateLimit 
-            ? 'Rate limit exceeded - Please try again in a moment or switch to a different model'
-            : errorData.error || errorData.details || `HTTP ${response.status}`,
+            ? (errorData.userMessage || 'Rate limit exceeded - Please try again in a moment or switch to a different model')
+            : isModelError
+            ? (errorData.userMessage || 'Invalid model name - Please select a different model')
+            : userMessage,
           details: isRateLimit
-            ? errorData.details || 'The AI provider has temporarily limited requests. Try switching to a different model or wait a few moments.'
+            ? (errorData.details || 'The AI provider has temporarily limited requests. Try switching to a different model or wait a few moments.')
+            : isModelError
+            ? (errorData.details || `Model "${model}" is not available. Please select a different model from the dropdown.`)
             : errorData.details,
           requestId: requestId,
           timestamp: errorData.timestamp || new Date().toISOString(),
@@ -161,6 +182,8 @@ export default function App() {
           statusCode: response.status,
           stack: errorData.stack,
           retryAfter: errorData.retryAfter,
+          errorType: errorData.errorType,
+          availableModels: errorData.availableModels,
         });
         setLoading(false);
         return;
@@ -391,6 +414,9 @@ export default function App() {
           statusCode={error.statusCode}
           timestamp={error.timestamp}
           endpoint={error.endpoint}
+          retryAfter={error.retryAfter}
+          errorType={error.errorType}
+          availableModels={error.availableModels}
           onRetry={retryLastRequest}
           onDismiss={handleDismissError}
           onCopyDiagnostics={handleShowDiagnostics}

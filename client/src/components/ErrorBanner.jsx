@@ -18,6 +18,9 @@ export default function ErrorBanner({
   onDismiss,
   onCopyDiagnostics,
   autoDismissSeconds = 10,
+  retryAfter,
+  errorType,
+  availableModels,
 }) {
   // Auto-dismiss after specified seconds
   useEffect(() => {
@@ -65,6 +68,17 @@ export default function ErrorBanner({
             <MarkdownText variant="error" className="text-xs opacity-90 mb-2">
               {details}
             </MarkdownText>
+          )}
+          {retryAfter && (
+            <div className="text-xs opacity-90 mb-2 font-medium">
+              ⏱️ Please retry in {Math.ceil(retryAfter)} seconds
+            </div>
+          )}
+          {errorType === 'model_not_found' && availableModels && availableModels.length > 0 && (
+            <div className="text-xs opacity-90 mb-2">
+              💡 Available models: {availableModels.slice(0, 5).join(', ')}
+              {availableModels.length > 5 ? '...' : ''}
+            </div>
           )}
           {requestId && (
             <div className="text-xs opacity-80 font-mono">

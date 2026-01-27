@@ -281,6 +281,59 @@ app.post(agentPath, async (req, res) => {
       return res.status(400).json({ error: 'Invalid userInput' });
     }
 
+    // Validate and normalize model name
+    let validatedModel = model || DEFAULT_MODEL;
+    try {
+      const { validateModelName, normalizeModelName } = await import('./lib/modelValidator.js');
+      const { getAllModels } = await import('./lib/modelFetcher.js');
+      
+      // Try to get available models for validation
+      let availableModels = [];
+      try {
+        availableModels = await getAllModels();
+      } catch (err) {
+        console.warn('[AGENT] Could not fetch available models for validation:', err.message);
+      }
+
+      const validation = validateModelName(validatedModel, availableModels);
+      if (!validation.valid) {
+        // Try to normalize and validate again
+        const normalized = normalizeModelName(validatedModel);
+        if (normalized && normalized !== validatedModel) {
+          const revalidation = validateModelName(normalized, availableModels);
+          if (revalidation.valid) {
+            console.log(`[AGENT] Model name normalized: "${validatedModel}" -> "${normalized}"`);
+            validatedModel = normalized;
+          } else {
+            return res.status(400).json({
+              error: 'Invalid model name',
+              details: validation.error,
+              originalModel: validatedModel,
+              normalizedModel: normalized,
+              availableModels: availableModels.slice(0, 10).map(m => m.id || m),
+              requestId: req.requestId,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } else {
+          return res.status(400).json({
+            error: 'Invalid model name',
+            details: validation.error,
+            originalModel: validatedModel,
+            availableModels: availableModels.slice(0, 10).map(m => m.id || m),
+            requestId: req.requestId,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } else if (validation.normalized && validation.normalized !== validatedModel) {
+        validatedModel = validation.normalized;
+        console.log(`[AGENT] Model name normalized: "${model}" -> "${validatedModel}"`);
+      }
+    } catch (validationError) {
+      console.warn('[AGENT] Model validation error (continuing with original model):', validationError.message);
+      // Continue with original model if validation fails
+    }
+
     // Load or create session
     let session = null;
     if (sessionId) {
@@ -296,7 +349,7 @@ app.post(agentPath, async (req, res) => {
     if (normalizedInput === '/recap' || normalizedInput.startsWith('/recap')) {
       // Generate recap from session history
       try {
-        const recap = await generateRecap(session, model || DEFAULT_MODEL);
+        const recap = await generateRecap(session, validatedModel);
         return res.json({
           intent: 'recap',
           narration: recap,
@@ -372,13 +425,37 @@ app.post(agentPath, async (req, res) => {
     });
   } catch (err) {
     console.error('Agent endpoint error:', err);
+    
+    // Check for rate limit errors and provide user-friendly message
+    const { isRateLimitError, isModelNotFoundError } = await import('./lib/retryUtils.js');
+    const rateLimitInfo = isRateLimitError(err);
+    const isModelError = isModelNotFoundError(err);
+
+    let errorMessage = err.message;
+    let userFriendlyMessage = errorMessage;
+    let errorType = 'unknown';
+
+    if (rateLimitInfo) {
+      errorType = 'rate_limit';
+      userFriendlyMessage = `Rate limit exceeded. ${rateLimitInfo.retryAfter ? `Please retry in ${Math.ceil(rateLimitInfo.retryAfter)} seconds.` : 'Please try again later.'}`;
+      if (rateLimitInfo.retryAfter) {
+        userFriendlyMessage += `\n\nYou've reached the free tier quota limit. Consider upgrading to a paid plan or waiting before retrying.`;
+      }
+    } else if (isModelError) {
+      errorType = 'model_not_found';
+      userFriendlyMessage = `Model not found or not supported. Please check the model name and try again.`;
+    }
+
     res.status(500).json({ 
       error: 'Agent error', 
-      details: err.message,
+      errorType,
+      details: errorMessage,
+      userMessage: userFriendlyMessage,
       requestId: req.requestId,
       timestamp: new Date().toISOString(),
       endpoint: req.path,
       method: req.method,
+      ...(rateLimitInfo && { retryAfter: rateLimitInfo.retryAfter }),
       stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
