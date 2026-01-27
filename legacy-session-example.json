@@ -1,0 +1,113 @@
+{
+  "state_version": "1.0.0",
+  "campaign": {
+    "campaign_id": "celestide_isles",
+    "name": "Celestide Isles",
+    "region_type": "floating archipelago",
+    "theme": ["wind", "celestial energy", "environmental balance"],
+    "time_of_day": "morning",
+    "weather": "clear_wind"
+  },
+  "session": {
+    "session_id": "session_02",
+    "previous_session_id": "session_01",
+    "title": "Skyfall Expanse",
+    "status": "active",
+    "starting_location": "Route 2 - Southern Approach",
+    "last_checkpoint": "Skysong Harbor - Professor Liora Lab",
+    "narrative_flags": {
+      "met_professor_liora": true,
+      "obtained_starter": true,
+      "completed_tutorial": true,
+      "environmental_hazard_resolution": true
+    }
+  },
+  "world_state": {
+    "locations": {
+      "Skysong Harbor": {
+        "status": "stable",
+        "services": ["pokemon_center", "pokemart", "research_lab"],
+        "npc_presence": ["Professor Liora", "Assistant Kael"]
+      },
+      "Route 2 - Southern Approach": {
+        "status": "active",
+        "npc_presence": []
+      }
+    },
+    "global_effects": {
+      "wind_instability": "reduced_near_harbor",
+      "pokemon_migration": "disrupted",
+      "environment_reacts_to_players": true,
+      "celestial_alignment": "active",
+      "wind_currents": "favorable"
+    }
+  },
+  "trainers": [
+    {
+      "trainer_id": "valion",
+      "name": "Valion",
+      "class": "Scout",
+      "level": 1,
+      "milestones": ["environmental_hazard_resolution", "obtained_starter", "met_professor"],
+      "party": [
+        {
+          "pokemon_id": "dreepy",
+          "species": "Dreepy",
+          "variant": "Celestide",
+          "form_stage": "juvenile",
+          "nickname": "Drift",
+          "level": 5,
+          "hp": {
+            "current": 20,
+            "max": 20
+          },
+          "status": "healthy",
+          "typing": ["Dragon", "Ghost"],
+          "experience": {
+            "current_xp": 50,
+            "xp_to_next": 100
+          }
+        }
+      ]
+    },
+    {
+      "trainer_id": "trainer_001",
+      "name": "Alex",
+      "class": "Researcher",
+      "level": 1,
+      "milestones": ["obtained_starter", "met_professor"],
+      "party": [
+        {
+          "pokemon_id": "pokemon_001",
+          "species": "Pikachu",
+          "variant": "Alolan",
+          "nickname": "Sparky",
+          "level": 5,
+          "hp": {
+            "current": 20,
+            "max": 20
+          },
+          "status": "healthy",
+          "typing": ["Electric"],
+          "experience": {
+            "current_xp": 50,
+            "xp_to_next": 100
+          }
+        }
+      ]
+    }
+  ],
+  "known_species_flags": {
+    "pikachu_alolan_variant": true,
+    "raichu_alolan_variant": false,
+    "celestide_variant_known": true,
+    "alternate_evolution_known": false,
+    "cosmoros_species_revealed": true,
+    "dreepy_celestide_variant": true
+  },
+  "next_actions": {
+    "default_choice": "Continue exploring Route 2",
+    "session_2_entry": "The group prepares to leave Skysong Harbor",
+    "encounter_roll_ready": true
+  }
+}

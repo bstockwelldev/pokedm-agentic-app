@@ -370,11 +370,9 @@ function migrateSessionData(exampleSession, campaign, worldState, nextActions, c
     last_choice: undefined,
   };
 
-  // Extract character IDs from trainers
-  const characterIds = trainers ? trainers.map((t) => t.trainer_id || t.character_id).filter(Boolean) : [];
-
+  // Use characterIds parameter (passed from parent function that has access to trainers)
   return {
-    session_id: exampleSession.session_id,
+    session_id: exampleSession.session_id || `session_${Date.now()}`,
     campaign_id: campaign?.campaign_id || '',
     character_ids: characterIds,
     episode_title: exampleSession.title || exampleSession.session_id,
