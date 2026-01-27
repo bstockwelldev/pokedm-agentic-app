@@ -520,14 +520,14 @@ export default function ImportDrawer({
 
   const availableComponents = importData ? getAvailableImportComponents(importData) : {};
 
-  if (!isOpen) return null;
-
-  // Debug: Log when drawer opens
+  // Debug: Log when drawer opens (must be before early return)
   useEffect(() => {
     if (isOpen) {
       console.log('[ImportDrawer] Drawer opened, importData:', importData);
     }
   }, [isOpen, importData]);
+
+  if (!isOpen) return null;
 
   return (
     <div
