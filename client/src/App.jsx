@@ -221,6 +221,8 @@ export default function App() {
               content: data.narration,
               intent: data.intent,
               choices: data.choices || [],
+              steps: data.steps || [], // Store tool execution steps
+              timestamp: new Date().toISOString(),
             },
           ]);
         }
@@ -457,7 +459,7 @@ export default function App() {
         </div>
 
         {/* Right Panel */}
-        <RightPanel session={session} />
+        <RightPanel session={session} messages={messages} />
       </div>
     </AppShell>
   );

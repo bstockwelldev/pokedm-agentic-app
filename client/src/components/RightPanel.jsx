@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { cn } from '../lib/utils';
 import StateTab from './StateTab';
+import ToolsTab from './ToolsTab';
+import LogsTab from './LogsTab';
 
 /**
  * RightPanel - Sidebar panel for session state, tools, and logs
- * Phase 3: Enhanced with tabs and structured StateTab
+ * Phase 4: Enhanced with ToolsTab and LogsTab
  */
 export default function RightPanel({
   session,
+  messages = [],
   className,
   ...props
 }) {
@@ -60,6 +63,22 @@ export default function RightPanel({
         >
           Tools
         </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'logs'}
+          aria-controls="logs-tabpanel"
+          id="logs-tab"
+          onClick={() => setActiveTab('logs')}
+          className={cn(
+            'px-4 py-2 text-sm font-medium',
+            'border-b-2 transition-colors',
+            activeTab === 'logs'
+              ? 'border-brand text-foreground'
+              : 'border-transparent text-muted hover:text-foreground'
+          )}
+        >
+          Logs
+        </button>
       </div>
 
       {/* Tab Panels */}
@@ -74,24 +93,24 @@ export default function RightPanel({
           <StateTab session={session} />
         </div>
 
-        {/* Tools Tab - Phase 4 Placeholder */}
+        {/* Tools Tab */}
         <div
           role="tabpanel"
           id="tools-tabpanel"
           aria-labelledby="tools-tab"
           hidden={activeTab !== 'tools'}
         >
-          <h3 className="text-lg font-semibold mb-4 text-foreground">
-            Tool Executions
-          </h3>
-          <div className="text-muted italic text-sm">
-            Tool execution history will be displayed here in Phase 4.
-            {session?.steps && session.steps.length > 0 && (
-              <div className="mt-2 text-xs">
-                {session.steps.length} tool execution(s) available
-              </div>
-            )}
-          </div>
+          <ToolsTab messages={messages} />
+        </div>
+
+        {/* Logs Tab */}
+        <div
+          role="tabpanel"
+          id="logs-tabpanel"
+          aria-labelledby="logs-tab"
+          hidden={activeTab !== 'logs'}
+        >
+          <LogsTab messages={messages} />
         </div>
       </div>
     </aside>
