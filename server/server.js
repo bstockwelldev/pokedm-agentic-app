@@ -53,6 +53,128 @@ app.use((req, res, next) => {
 // Default model
 const DEFAULT_MODEL = process.env.LLM_MODEL || 'gemini-1.5-pro-latest';
 
+/**
+ * Generate a simple recap from session history (fallback)
+ * @param {object} session - Session object
+ * @returns {string} Recap text
+ */
+function generateSimpleRecap(session) {
+  const recaps = [];
+  
+  // Build recap from event log
+  if (session.session?.event_log && session.session.event_log.length > 0) {
+    const recentEvents = session.session.event_log.slice(-10); // Last 10 events
+    const eventSummaries = recentEvents
+      .filter(e => e.type !== 'recap') // Exclude existing recaps
+      .map(e => `- ${e.summary}${e.details ? `: ${e.details}` : ''}`)
+      .join('\n');
+    
+    if (eventSummaries) {
+      recaps.push('## Recent Events\n' + eventSummaries);
+    }
+  }
+  
+  // Add existing recaps from continuity
+  if (session.continuity?.recaps && session.continuity.recaps.length > 0) {
+    const existingRecaps = session.continuity.recaps
+      .slice(-3) // Last 3 recaps
+      .map(r => r.text)
+      .join('\n\n');
+    if (existingRecaps) {
+      recaps.push('## Previous Recap\n' + existingRecaps);
+    }
+  }
+  
+  // Add timeline entries
+  if (session.continuity?.timeline && session.continuity.timeline.length > 0) {
+    const timelineEntries = session.continuity.timeline
+      .slice(-5) // Last 5 timeline entries
+      .map(t => `- ${t.description}`)
+      .join('\n');
+    if (timelineEntries) {
+      recaps.push('## Timeline\n' + timelineEntries);
+    }
+  }
+  
+  // Add current state summary
+  const stateSummary = [];
+  if (session.session?.scene?.location_id) {
+    stateSummary.push(`**Current Location:** ${session.session.scene.location_id}`);
+  }
+  if (session.session?.scene?.description) {
+    stateSummary.push(`**Scene:** ${session.session.scene.description}`);
+  }
+  if (session.characters && session.characters.length > 0) {
+    const partySize = session.characters.reduce((sum, c) => sum + c.pokemon_party.length, 0);
+    stateSummary.push(`**Party:** ${partySize} Pokémon`);
+  }
+  if (session.session?.current_objectives && session.session.current_objectives.length > 0) {
+    const objectives = session.session.current_objectives
+      .map(o => `- ${o.description} (${o.status})`)
+      .join('\n');
+    stateSummary.push(`**Objectives:**\n${objectives}`);
+  }
+  
+  if (stateSummary.length > 0) {
+    recaps.push('## Current State\n' + stateSummary.join('\n'));
+  }
+  
+  // If no recap data available, return a message
+  if (recaps.length === 0) {
+    return 'No recap data available yet. Start your adventure to build up session history!';
+  }
+  
+  return recaps.join('\n\n');
+}
+
+/**
+ * Generate an AI-powered recap from session history
+ * @param {object} session - Session object
+ * @param {string} model - Model to use for generation
+ * @returns {Promise<string>} Recap text
+ */
+async function generateRecap(session, model) {
+  // First, gather all recap data
+  const recapData = generateSimpleRecap(session);
+  
+  // If there's minimal data, just return the simple recap
+  if (recapData === 'No recap data available yet. Start your adventure to build up session history!') {
+    return recapData;
+  }
+  
+  // Use DM agent to generate a narrative recap
+  try {
+    const { generateText } = await import('ai');
+    const { getModel } = await import('./lib/modelProvider.js');
+    
+    const recapPrompt = `You are a friendly narrator for a Pokémon adventure session. 
+
+The player has requested a recap of their adventure so far. Based on the following session data, create a warm, engaging recap that:
+
+1. Summarizes what has happened in the adventure
+2. Highlights key moments and discoveries
+3. Reminds them of their current situation and objectives
+4. Uses a friendly, encouraging tone suitable for all ages
+
+## Session Data
+
+${recapData}
+
+Create a narrative recap (2-3 paragraphs) that brings the player back into the story.`;
+
+    const result = await generateText({
+      model: await getModel(model),
+      prompt: recapPrompt,
+      maxSteps: 1,
+    });
+    
+    return result.text;
+  } catch (error) {
+    console.error('AI recap generation failed, using simple recap:', error);
+    return recapData;
+  }
+}
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -167,6 +289,37 @@ app.post(agentPath, async (req, res) => {
 
     if (!session) {
       session = createSession(campaignId || null, characterIds || []);
+    }
+
+    // Handle special commands before routing
+    const normalizedInput = userInput.trim().toLowerCase();
+    if (normalizedInput === '/recap' || normalizedInput.startsWith('/recap')) {
+      // Generate recap from session history
+      try {
+        const recap = await generateRecap(session, model || DEFAULT_MODEL);
+        return res.json({
+          intent: 'recap',
+          narration: recap,
+          choices: [],
+          session: session,
+          sessionId: session.session.session_id,
+          steps: [],
+          customPokemon: null,
+        });
+      } catch (error) {
+        console.error('Recap generation error:', error);
+        // Fallback to simple recap
+        const simpleRecap = generateSimpleRecap(session);
+        return res.json({
+          intent: 'recap',
+          narration: simpleRecap,
+          choices: [],
+          session: session,
+          sessionId: session.session.session_id,
+          steps: [],
+          customPokemon: null,
+        });
+      }
     }
 
     // Route intent
