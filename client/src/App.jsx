@@ -10,6 +10,7 @@ import Composer from './components/Composer';
 import RightPanel from './components/RightPanel';
 import { renderMessage } from './lib/messageMapper';
 import { cn } from './lib/utils';
+import { filterValidModels, normalizeModelName } from './lib/modelValidator';
 
 /**
  * PokeDM Chat Application

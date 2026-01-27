@@ -522,6 +522,13 @@ export default function ImportDrawer({
 
   if (!isOpen) return null;
 
+  // Debug: Log when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('[ImportDrawer] Drawer opened, importData:', importData);
+    }
+  }, [isOpen, importData]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -570,28 +577,30 @@ export default function ImportDrawer({
           {!importData && (
             <div className="space-y-4">
               {/* Preset/Example Loader */}
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">
-                  Load Example Session
+              <div className="bg-purple-950/20 border border-purple-800/30 rounded-lg p-4">
+                <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <span>📚</span>
+                  <span>Quick Start: Load Example Session</span>
                 </h3>
                 <button
                   onClick={handleLoadExample}
                   className={cn(
                     'w-full px-4 py-3 rounded-md',
-                    'bg-purple-900/30 border border-purple-800/50',
-                    'text-purple-200 hover:text-purple-100',
-                    'font-medium',
-                    'focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-background',
-                    'hover:bg-purple-900/40 active:bg-purple-900/50 transition-colors',
-                    'flex items-center justify-center gap-2'
+                    'bg-purple-600 hover:bg-purple-700 active:bg-purple-800',
+                    'border border-purple-500',
+                    'text-white font-semibold',
+                    'focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-background',
+                    'transition-all duration-200',
+                    'flex items-center justify-center gap-2',
+                    'shadow-lg hover:shadow-xl'
                   )}
                   aria-label="Load example campaign session"
                 >
-                  <span>📚</span>
+                  <span className="text-xl">📚</span>
                   <span>Load Celestide Isles Example</span>
                 </button>
-                <p className="text-xs text-muted mt-2 text-center">
-                  Start with a pre-configured example campaign session
+                <p className="text-xs text-muted mt-3 text-center">
+                  Start with a pre-configured example campaign session featuring the Celestide Isles region
                 </p>
               </div>
 
