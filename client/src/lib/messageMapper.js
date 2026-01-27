@@ -88,20 +88,20 @@ export function renderMessage(message, index, props = {}) {
   // render both components
   if (hasPrimaryContent && hasToolExecutions) {
     const PrimaryComponent = getMessageComponent(message);
-    return (
-      <React.Fragment key={index}>
-        {React.createElement(PrimaryComponent, {
-          message: message,
-          index: index,
-          ...props,
-        })}
-        {React.createElement(ToolRunMessage, {
-          message: message,
-          index: `${index}-tools`,
-          ...props,
-        })}
-      </React.Fragment>
-    );
+    return React.createElement(React.Fragment, { key: index }, [
+      React.createElement(PrimaryComponent, {
+        key: `${index}-primary`,
+        message: message,
+        index: index,
+        ...props,
+      }),
+      React.createElement(ToolRunMessage, {
+        key: `${index}-tools`,
+        message: message,
+        index: `${index}-tools`,
+        ...props,
+      }),
+    ]);
   }
   
   // Otherwise, render the single appropriate component
