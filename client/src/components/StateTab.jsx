@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { cn } from '../lib/utils';
 import MarkdownText from './MarkdownText';
 import JsonViewer from './JsonViewer';
+import { PanelSkeleton } from './Skeleton';
 
 /**
  * StateTab - Enhanced session state display with structured sections
@@ -40,11 +41,7 @@ export default function StateTab({ session }) {
   }, [session, searchQuery]);
 
   if (!session) {
-    return (
-      <div className="text-muted italic">
-        No session data available
-      </div>
-    );
+    return <PanelSkeleton />;
   }
 
   return (

@@ -41,11 +41,13 @@ app.get('/api/health', (req, res) => {
 });
 
 
-// In Vercel, the serverless function is already at /api/agent, so routes should be relative
-// For local dev, we keep /api prefix; for Vercel, the function handles the /api prefix
+// In Vercel, each serverless function receives requests with the full path
+// So /api/agent requests go to api/agent.js, and the Express app sees /api/agent
+// For local dev, we also use /api prefix
 const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
-const agentPath = isVercel ? '/' : '/api/agent';
-const chatPath = isVercel ? '/chat' : '/api/chat';
+// Always use full paths - Vercel preserves the path when calling serverless functions
+const agentPath = '/api/agent';
+const chatPath = '/api/chat';
 
 /**
  * GET /api/models

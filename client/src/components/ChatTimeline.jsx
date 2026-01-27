@@ -1,9 +1,11 @@
 import React from 'react';
 import { cn } from '../lib/utils';
+import { MessageSkeleton } from './Skeleton';
 
 /**
  * ChatTimeline - Container for chat messages
  * Displays messages in a scrollable log format
+ * Phase 5: Enhanced with skeleton loaders
  */
 export default function ChatTimeline({
   messages,
@@ -27,7 +29,7 @@ export default function ChatTimeline({
       )}
       {...props}
     >
-      {messages.length === 0 && (
+      {messages.length === 0 && !loading && (
         <div className="text-muted italic">
           Welcome to PokeDM! Start your adventure by describing what you'd like to do.
         </div>
@@ -39,9 +41,9 @@ export default function ChatTimeline({
         <div
           role="status"
           aria-live="polite"
-          className="text-muted italic mt-4"
+          className="mt-4"
         >
-          Thinking…
+          <MessageSkeleton variant="assistant" />
         </div>
       )}
     </div>

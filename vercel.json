@@ -33,15 +33,19 @@
   "routes": [
     {
       "src": "/api/models",
-      "dest": "/api/models"
+      "dest": "/api/models.js"
     },
     {
       "src": "/api/import",
-      "dest": "/api/import"
+      "dest": "/api/import.js"
+    },
+    {
+      "src": "/api/agent",
+      "dest": "/api/agent.js"
     },
     {
       "src": "/api/(.*)",
-      "dest": "/api/agent"
+      "dest": "/api/agent.js"
     },
     {
       "src": "/(.*)",

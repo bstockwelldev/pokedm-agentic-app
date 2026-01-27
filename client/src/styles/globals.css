@@ -77,3 +77,43 @@ select:focus-visible {
   white-space: nowrap;
   border-width: 0;
 }
+
+/* Select dropdown styling for better contrast */
+select {
+  color: var(--foreground);
+  background-color: var(--input);
+}
+
+/* Ensure select options have high contrast - dark text on white background */
+select option {
+  background-color: #ffffff !important;
+  color: #1a1a1a !important;
+  padding: 8px 12px;
+  font-weight: 400;
+}
+
+/* Selected/highlighted option styling */
+select option:checked,
+select option:focus,
+select option[selected] {
+  background-color: var(--brand) !important;
+  color: var(--background) !important;
+  font-weight: 600;
+}
+
+/* Hover state for options (when supported by browser) */
+select option:hover {
+  background-color: rgba(0, 217, 255, 0.15) !important;
+  color: #1a1a1a !important;
+}
+
+/* Ensure the select dropdown itself maintains contrast */
+select:focus option {
+  background-color: #ffffff !important;
+  color: #1a1a1a !important;
+}
+
+select:focus option:checked {
+  background-color: var(--brand) !important;
+  color: var(--background) !important;
+}
