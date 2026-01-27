@@ -1,6 +1,14 @@
 // PokeDM Agentic Flow Server
 // Multi-agent system using Vercel AI SDK v6 with Router/DM/Rules/State/Lore/Design agents
 
+// #region agent log
+console.log('[DEBUG] server/server.js: Module loading', {
+  vercel: !!process.env.VERCEL,
+  nodeEnv: process.env.NODE_ENV,
+  hypothesisId: 'C',
+});
+// #endregion
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -27,6 +35,16 @@ app.use(express.json());
 
 // Request ID middleware - add unique ID to all requests for traceability
 app.use((req, res, next) => {
+  // #region agent log
+  console.log('[DEBUG] server/server.js: Request received in Express', {
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl,
+    hypothesisId: 'A',
+  });
+  // #endregion
   req.requestId = crypto.randomUUID();
   res.setHeader('X-Request-ID', req.requestId);
   next();
@@ -58,9 +76,29 @@ const chatPath = '/api/chat';
  * Note: In Vercel, when served from api/models.js, the path is preserved as /api/models
  */
 app.get('/api/models', async (req, res) => {
+  // #region agent log
+  console.log('[DEBUG] server/server.js: /api/models route matched', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    hypothesisId: 'A',
+  });
+  // #endregion
   try {
     const { getAllModels } = await import('./lib/modelFetcher.js');
+    // #region agent log
+    console.log('[DEBUG] server/server.js: modelFetcher imported', {
+      hasGetAllModels: !!getAllModels,
+      hypothesisId: 'C',
+    });
+    // #endregion
     const models = await getAllModels();
+    // #region agent log
+    console.log('[DEBUG] server/server.js: models fetched', {
+      modelCount: models.length,
+      hypothesisId: 'A',
+    });
+    // #endregion
     const groqCount = models.filter(m => m.provider === 'groq').length;
     const geminiCount = models.filter(m => m.provider === 'google').length;
     console.log(`[MODELS] API endpoint returning ${models.length} models (${geminiCount} Gemini, ${groqCount} Groq)`);
@@ -96,8 +134,26 @@ app.get('/api/models', async (req, res) => {
  * Returns: { narration, choices, session, steps }
  */
 app.post(agentPath, async (req, res) => {
+  // #region agent log
+  console.log('[DEBUG] server/server.js: /api/agent route matched', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    agentPath,
+    hasBody: !!req.body,
+    hypothesisId: 'A',
+  });
+  // #endregion
   try {
     const { userInput, sessionId, model, campaignId, characterIds } = req.body || {};
+    // #region agent log
+    console.log('[DEBUG] server/server.js: request body parsed', {
+      hasUserInput: !!userInput,
+      hasSessionId: !!sessionId,
+      hasModel: !!model,
+      hypothesisId: 'A',
+    });
+    // #endregion
 
     if (typeof userInput !== 'string' || userInput.trim().length === 0) {
       return res.status(400).json({ error: 'Invalid userInput' });
@@ -180,7 +236,8 @@ app.post(agentPath, async (req, res) => {
  * 
  * Import session data from export file
  * Expects: { session_data?, messages?, characters?, campaign?, custom_pokemon?, continuity?, options }
- * Returns: { sessionId, session, imported_components, warnings }
+ * Supports automatic migration from legacy/example format
+ * Returns: { sessionId, session, imported_components, warnings, migrated? }
  * 
  * Note: In Vercel, when served from api/import.js, the path is preserved as /api/import
  */
@@ -198,11 +255,25 @@ app.post('/api/import', async (req, res) => {
 
     const importComponents = options.import_components || [];
     const warnings = [];
+    let migrated = false;
 
-    // Create new session
-    const campaignId = session_data?.campaign_id || campaign?.campaign_id || null;
-    const characterIds = session_data?.character_ids || characters?.map((c) => c.character_id).filter(Boolean) || [];
-    const newSession = createSession(campaignId, characterIds);
+    // Check if this is a legacy format session that needs migration
+    const { isLegacyFormat, migrateExampleToSchema } = await import('./lib/migrateSession.js');
+    const isLegacy = session_data && isLegacyFormat(session_data);
+
+    let newSession;
+    
+    if (isLegacy) {
+      // Migrate legacy format to schema-compliant format
+      console.log('[IMPORT] Detected legacy session format, migrating...');
+      warnings.push('Legacy session format detected and automatically migrated to schema-compliant format');
+      newSession = migrateExampleToSchema(session_data);
+      migrated = true;
+    } else {
+      // Standard import flow
+      const campaignId = session_data?.campaign_id || campaign?.campaign_id || null;
+      const characterIds = session_data?.character_ids || characters?.map((c) => c.character_id).filter(Boolean) || [];
+      newSession = createSession(campaignId, characterIds);
 
     // Merge imported components
     if (importComponents.includes('session') && session_data) {
@@ -252,8 +323,9 @@ app.post('/api/import', async (req, res) => {
       const response = {
         sessionId: validated.session.session_id,
         session: validated,
-        imported_components: importComponents,
+        imported_components: migrated ? ['all'] : importComponents,
         warnings: warnings.length > 0 ? warnings : undefined,
+        migrated: migrated || undefined,
       };
 
       // Include messages separately if imported (not part of session schema)
@@ -299,8 +371,25 @@ app.post(chatPath, async (req, res) => {
 });
 
 // Catch-all for undefined routes - return JSON (must be after all routes)
+// Catch-all for unmatched routes (for debugging)
 app.use((req, res) => {
-  res.status(404).json({ error: 'Not found', path: req.path });
+  // #region agent log
+  console.log('[DEBUG] server/server.js: unmatched route', {
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    hypothesisId: 'A',
+  });
+  // #endregion
+  res.status(404).json({ 
+    error: 'Not found', 
+    path: req.path,
+    url: req.url,
+    originalUrl: req.originalUrl,
+    method: req.method,
+    requestId: req.requestId,
+  });
 });
 
 // Error handler middleware - must be last

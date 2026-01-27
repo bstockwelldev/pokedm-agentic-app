@@ -1,8 +1,29 @@
 // Vercel serverless function for /api/import endpoint
 // This file is automatically served at /api/import by Vercel
 
+// #region agent log
+console.log('[DEBUG] api/import.js: Module loading', { timestamp: Date.now(), hypothesisId: 'C' });
+// #endregion
+
 import app from '../server/server.js';
 
+// #region agent log
+console.log('[DEBUG] api/import.js: Express app imported', { hasApp: !!app, appType: typeof app, hypothesisId: 'C' });
+// #endregion
+
 // Vercel serverless function handler
-// @vercel/node expects the Express app as default export
-export default app;
+// Wrap Express app for Vercel serverless function format
+export default function handler(req, res) {
+  // #region agent log
+  console.log('[DEBUG] api/import.js: Handler invoked', {
+    method: req.method,
+    url: req.url,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    hypothesisId: 'A',
+  });
+  // #endregion
+  
+  // Call Express app
+  return app(req, res);
+}
