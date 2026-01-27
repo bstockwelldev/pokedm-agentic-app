@@ -1,0 +1,79 @@
+/* Global Styles for PokeDM Agentic App */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design Tokens - CSS Variables for theming */
+:root {
+  --background: #0a0e27;
+  --foreground: #f0f0f0;
+  --muted: #6b7280;
+  --brand: #00d9ff;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.05);
+  --ring: #00d9ff;
+  
+  /* Focus ring for keyboard navigation */
+  --focus-ring: 0 0 0 2px var(--brand);
+  --focus-ring-offset: 0 0 0 2px var(--background), 0 0 0 4px var(--brand);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Responsive Breakpoints (to be used with Tailwind) */
+/* 
+  Mobile: < 640px - Stacked layout, bottom sheet for right panel
+  Tablet: 640px - 1023px - Stacked layout, collapsible side panel  
+  Desktop: >= 1024px - Side-by-side layout, resizable panels
+*/
+
+/* Mobile-first responsive utilities */
+@media (max-width: 639px) {
+  /* Mobile styles will be added when components are created */
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  /* Tablet styles will be added when components are created */
+}
+
+@media (min-width: 1024px) {
+  /* Desktop styles will be added when components are created */
+}
+
+/* Focus styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--brand, #00d9ff);
+  outline-offset: 2px;
+}
+
+/* Ensure interactive elements are keyboard accessible */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--brand, #00d9ff);
+  outline-offset: 2px;
+}
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

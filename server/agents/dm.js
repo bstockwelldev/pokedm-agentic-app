@@ -29,7 +29,7 @@ Provide narration and 2-4 choices for the players.`;
 
   try {
     const result = await generateText({
-      model: google(modelName),
+      model: getModel(modelName),
       prompt: fullPrompt,
       maxSteps: config.maxSteps,
     });

@@ -1,8 +1,8 @@
 import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { getModel } from '../lib/modelProvider.js';
 import { getDesignPrompt } from '../prompts/design.js';
 import { getAgentConfig, getAgentTools } from '../config/agentConfig.js';
-import { getCustomPokemonTools, fetchPokemon, fetchPokemonSpecies } from '../tools/index.js';
+import { getCustomPokemonTools, getPokeAPITools } from '../tools/index.js';
 import { wrapToolsWithSession } from './toolHelpers.js';
 
 /**
@@ -15,10 +15,10 @@ export async function createCustomPokemonAgent(userInput, session, model = null)
 
   // Get available tools
   const customTools = getCustomPokemonTools();
+  const pokeAPITools = getPokeAPITools();
   const allTools = {
     ...customTools,
-    fetchPokemon,
-    fetchPokemonSpecies,
+    ...pokeAPITools,
   };
   const agentTools = getAgentTools('design', allTools);
 
@@ -54,7 +54,7 @@ Create the custom Pokémon following all KB rules. Use the createCustomPokemon t
 
   try {
     const result = await generateText({
-      model: google(modelName),
+      model: getModel(modelName),
       prompt: fullPrompt,
       tools: toolsWithSession,
       maxSteps: config.maxSteps,

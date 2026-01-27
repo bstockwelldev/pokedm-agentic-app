@@ -13,6 +13,12 @@ export default defineConfig({
     host: '0.0.0.0', // Allow external connections (needed for Docker)
     port: 3000, // Match README and docker-compose port mapping
     strictPort: false, // Allow port fallback if 3000 is in use
+    headers: {
+      // Prevent browser caching of assets (helps avoid stale Next.js chunks)
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
     proxy: {
       '/api': {
         // Use environment variable if set, otherwise detect Docker vs local

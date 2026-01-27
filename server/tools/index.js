@@ -3,23 +3,27 @@
  * Exports all tools organized by category
  */
 
-// Pokemon tools
-export { fetchPokemon } from './pokemon.js';
-export { fetchPokemonSpecies } from './species.js';
+// Pokemon tools - Import first, then re-export
+import { fetchPokemon } from './pokemon.js';
+import { fetchPokemonSpecies } from './species.js';
+export { fetchPokemon, fetchPokemonSpecies };
 
-// Battle tools
-export { fetchMove } from './moves.js';
-export { fetchAbility } from './abilities.js';
-export { fetchType } from './types.js';
+// Battle tools - Import first, then re-export
+import { fetchMove } from './moves.js';
+import { fetchAbility } from './abilities.js';
+import { fetchType } from './types.js';
+export { fetchMove, fetchAbility, fetchType };
 
-// World tools
-export { fetchEvolutionChain } from './evolution.js';
-export { fetchGeneration } from './generation.js';
-export { fetchItem } from './items.js';
-export { fetchLocation } from './locations.js';
+// World tools - Import first, then re-export
+import { fetchEvolutionChain } from './evolution.js';
+import { fetchGeneration } from './generation.js';
+import { fetchItem } from './items.js';
+import { fetchLocation } from './locations.js';
+export { fetchEvolutionChain, fetchGeneration, fetchItem, fetchLocation };
 
-// Custom tools
-export { createCustomPokemon, getCustomPokemon, listCustomPokemon } from './custom-pokemon.js';
+// Custom tools - Import first, then re-export
+import { createCustomPokemon, getCustomPokemon, listCustomPokemon } from './custom-pokemon.js';
+export { createCustomPokemon, getCustomPokemon, listCustomPokemon };
 
 /**
  * Get all PokeAPI tools

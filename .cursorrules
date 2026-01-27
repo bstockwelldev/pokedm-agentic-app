@@ -1,0 +1,35 @@
+# Cursor Rules for Agentic App
+
+## Project Context
+This is a PokeDM agentic application with Express.js backend and React frontend.
+See AGENTS.md for comprehensive documentation.
+
+## Key Entry Points
+- Server: `server/server.js` - Main Express server entry point
+- Client: `client/src/App.jsx` - Main React component
+- Router: `server/agents/router.js` - Intent routing agent
+- Docker: `docker-compose.yml` - Container orchestration
+
+## Architecture Pattern
+Multi-agent system with router → specialized agents → tools → storage
+
+## Common Tasks
+- Adding agent: Create in `server/agents/`, add prompt in `server/prompts/`, update router
+- Adding tool: Create in `server/tools/`, export from `server/tools/index.js`
+- Modifying UI: Edit `client/src/App.jsx`
+
+## File Organization
+- Agents: `server/agents/*.js`
+- Tools: `server/tools/*.js`
+- Prompts: `server/prompts/*.js`
+- Storage: `server/storage/*.js`
+- Schemas: `server/schemas/*.js`
+
+## Environment
+- Server uses `.env` file in `server/` directory
+- Docker uses environment variables from `docker-compose.yml`
+- See `server/.env.example` for required variables
+
+## Testing
+- Local: `cd server && npm start` + `cd client && npm run dev`
+- Docker: `docker compose up --build`

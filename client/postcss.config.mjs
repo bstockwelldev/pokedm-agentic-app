@@ -1,4 +1,7 @@
-// Minimal PostCSS config for Vite
+// PostCSS config for Vite with Tailwind CSS
 export default {
-  plugins: {},
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
 };

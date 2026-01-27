@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { getModel } from '../lib/modelProvider.js';
 import { statePrompt } from '../prompts/state.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 import { PokemonSessionSchema } from '../schemas/session.js';
@@ -29,7 +29,7 @@ Analyze the request and determine what state updates are needed. Return a JSON o
 
   try {
     const result = await generateText({
-      model: google(modelName),
+      model: getModel(modelName),
       prompt: fullPrompt,
       maxSteps: config.maxSteps,
     });

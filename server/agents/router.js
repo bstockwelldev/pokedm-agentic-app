@@ -13,7 +13,7 @@ export async function routeIntent(userInput, sessionState, model = null) {
 
   try {
     const result = await generateText({
-      model: google(modelName),
+      model: getModel(modelName),
       prompt: routerPrompt.replace('{userInput}', userInput),
       maxSteps: config.maxSteps,
     });

@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { getModel } from '../lib/modelProvider.js';
 import { rulesPrompt } from '../prompts/rules.js';
 import { getAgentConfig, getAgentTools } from '../config/agentConfig.js';
 import { getPokeAPITools } from '../tools/index.js';
@@ -43,7 +43,7 @@ Calculate the result and provide a simple explanation.`;
 
   try {
     const result = await generateText({
-      model: google(modelName),
+      model: getModel(modelName),
       prompt: fullPrompt,
       tools: toolsWithSession,
       maxSteps: config.maxSteps,

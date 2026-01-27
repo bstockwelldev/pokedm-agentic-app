@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { getModel } from '../lib/modelProvider.js';
 import { lorePrompt } from '../prompts/lore.js';
 import { getAgentConfig, getAgentTools } from '../config/agentConfig.js';
 import { getPokeAPITools, getCustomPokemonTools } from '../tools/index.js';
@@ -41,7 +41,7 @@ Look up the requested Pokémon data and return simplified, kid-friendly informat
 
   try {
     const result = await generateText({
-      model: google(modelName),
+      model: getModel(modelName),
       prompt: fullPrompt,
       tools: toolsWithSession,
       maxSteps: config.maxSteps,

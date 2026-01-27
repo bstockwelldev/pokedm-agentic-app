@@ -1,4 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import ErrorBanner from './components/ErrorBanner';
+import DiagnosticsDrawer from './components/DiagnosticsDrawer';
+import ExportDrawer from './components/ExportDrawer';
+import ImportDrawer from './components/ImportDrawer';
+import AppShell from './components/AppShell';
+import TopBar from './components/TopBar';
+import ChatTimeline from './components/ChatTimeline';
+import Composer from './components/Composer';
+import RightPanel from './components/RightPanel';
+import { renderMessage } from './lib/messageMapper';
+import { cn } from './lib/utils';
 
 /**
  * PokeDM Chat Application
@@ -7,13 +18,24 @@ import React, { useState, useEffect } from 'react';
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [model, setModel] = useState('gemini-1.5-flash');
+  const [model, setModel] = useState('gemini-2.5-flash');
+  const [availableModels, setAvailableModels] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState(null);
+  const [focusedChoiceIndex, setFocusedChoiceIndex] = useState(-1);
+  const [error, setError] = useState(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [showExportDrawer, setShowExportDrawer] = useState(false);
+  const [showImportDrawer, setShowImportDrawer] = useState(false);
+  const [lastRequest, setLastRequest] = useState(null);
 
-  // Initialize session on mount
+  // Compute derived state for choices (must be before functions/hooks that use it)
+  const lastMessage = messages[messages.length - 1];
+  const hasChoices = lastMessage?.choices && lastMessage.choices.length > 0;
+
+  // Initialize session and fetch models on mount
   useEffect(() => {
     // Generate or load session ID from localStorage
     let savedSessionId = localStorage.getItem('pokedm_session_id');
@@ -22,12 +44,73 @@ export default function App() {
       localStorage.setItem('pokedm_session_id', savedSessionId);
     }
     setSessionId(savedSessionId);
+
+    // Fetch available models
+    async function fetchModels() {
+      try {
+        const response = await fetch('/api/models');
+        if (response.ok) {
+          const data = await response.json();
+          const models = data.models || [];
+          const groqModels = models.filter(m => m.provider === 'groq');
+          const geminiModels = models.filter(m => m.provider === 'google');
+          console.log(`[CLIENT] Fetched ${models.length} models: ${geminiModels.length} Gemini, ${groqModels.length} Groq`);
+          console.log('[CLIENT] All model IDs:', models.map(m => m.id).join(', '));
+          console.log('[CLIENT] Groq model IDs:', groqModels.map(m => m.id).join(', '));
+          setAvailableModels(models);
+          // Set default model if available
+          if (models.length > 0) {
+            const defaultModel = models.find((m) => m.id === 'gemini-2.5-flash') || models[0];
+            setModel(defaultModel.id);
+          }
+        } else {
+          console.error('[CLIENT] Failed to fetch models:', response.status, response.statusText);
+          // Fallback to known models including Groq
+          const fallbackModels = [
+            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google' },
+            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google' },
+            { id: 'groq/llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile (Groq)', provider: 'groq' },
+            { id: 'groq/llama-3.1-70b-versatile', name: 'Llama 3.1 70B Versatile (Groq)', provider: 'groq' },
+            { id: 'groq/llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant (Groq)', provider: 'groq' },
+            { id: 'groq/mixtral-8x7b-32768', name: 'Mixtral 8x7B 32K (Groq)', provider: 'groq' },
+            { id: 'groq/llama-3.2-90b-text-preview', name: 'Llama 3.2 90B Text Preview (Groq)', provider: 'groq' },
+            { id: 'groq/llama-3.2-11b-text-preview', name: 'Llama 3.2 11B Text Preview (Groq)', provider: 'groq' },
+          ];
+          console.log(`[CLIENT] Using fallback models: ${fallbackModels.length} total`);
+          setAvailableModels(fallbackModels);
+        }
+      } catch (err) {
+        console.error('[CLIENT] Failed to fetch models:', err);
+        // Fallback to known models including Groq
+        const fallbackModels = [
+          { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google' },
+          { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google' },
+          { id: 'groq/llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile (Groq)', provider: 'groq' },
+          { id: 'groq/llama-3.1-70b-versatile', name: 'Llama 3.1 70B Versatile (Groq)', provider: 'groq' },
+          { id: 'groq/llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant (Groq)', provider: 'groq' },
+          { id: 'groq/mixtral-8x7b-32768', name: 'Mixtral 8x7B 32K (Groq)', provider: 'groq' },
+          { id: 'groq/llama-3.2-90b-text-preview', name: 'Llama 3.2 90B Text Preview (Groq)', provider: 'groq' },
+          { id: 'groq/llama-3.2-11b-text-preview', name: 'Llama 3.2 11B Text Preview (Groq)', provider: 'groq' },
+        ];
+        console.log(`[CLIENT] Using fallback models: ${fallbackModels.length} total`);
+        setAvailableModels(fallbackModels);
+      }
+    }
+    fetchModels();
   }, []);
 
   // Send message to agent
   async function sendMessage() {
     const trimmed = input.trim();
     if (!trimmed || !sessionId) return;
+
+    // Clear any previous errors
+    setError(null);
+    setShowDiagnostics(false);
+
+    // Store request for retry functionality
+    const requestParams = { userInput: trimmed, sessionId, model };
+    setLastRequest(requestParams);
 
     // Add user's message to chat history
     setMessages((msgs) => [
@@ -57,22 +140,66 @@ export default function App() {
         } catch {
           errorData = { error: `Server error: ${response.status} ${response.statusText}`, details: text.substring(0, 200) };
         }
-        throw new Error(errorData.error || errorData.details || `HTTP ${response.status}`);
+        
+        // Extract request ID from headers if available
+        const requestId = response.headers.get('X-Request-ID') || errorData.requestId;
+        
+        // Enhanced error handling for rate limiting
+        const isRateLimit = response.status === 429 || errorData.error?.toLowerCase().includes('rate limit');
+        
+        setError({
+          message: isRateLimit 
+            ? 'Rate limit exceeded - Please try again in a moment or switch to a different model'
+            : errorData.error || errorData.details || `HTTP ${response.status}`,
+          details: isRateLimit
+            ? errorData.details || 'The AI provider has temporarily limited requests. Try switching to a different model or wait a few moments.'
+            : errorData.details,
+          requestId: requestId,
+          timestamp: errorData.timestamp || new Date().toISOString(),
+          endpoint: errorData.endpoint || '/api/agent',
+          method: 'POST',
+          statusCode: response.status,
+          stack: errorData.stack,
+          retryAfter: errorData.retryAfter,
+        });
+        setLoading(false);
+        return;
       }
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        throw new Error(`Expected JSON but got ${contentType}. Response: ${text.substring(0, 200)}`);
+        const requestId = response.headers.get('X-Request-ID');
+        setError({
+          message: `Expected JSON but got ${contentType}`,
+          details: text.substring(0, 200),
+          requestId: requestId,
+          timestamp: new Date().toISOString(),
+          endpoint: '/api/agent',
+          method: 'POST',
+          statusCode: response.status,
+        });
+        setLoading(false);
+        return;
       }
 
       const data = await response.json();
 
       if (data.error) {
-        setMessages((msgs) => [
-          ...msgs,
-          { role: 'assistant', content: `Error: ${data.error}` },
-        ]);
+        // Extract request ID from response headers or error data
+        const requestId = response.headers.get('X-Request-ID') || data.requestId;
+        setError({
+          message: data.error,
+          details: data.details,
+          requestId: requestId,
+          timestamp: data.timestamp || new Date().toISOString(),
+          endpoint: data.endpoint || '/api/agent',
+          method: 'POST',
+          statusCode: response.status,
+          stack: data.stack,
+        });
+        setLoading(false);
+        return;
       } else {
         // Update session ID if provided
         if (data.sessionId) {
@@ -110,13 +237,71 @@ export default function App() {
         }
       }
     } catch (err) {
-      setMessages((msgs) => [
-        ...msgs,
-        { role: 'assistant', content: `Error: ${err.message}` },
-      ]);
+      // Network errors or other exceptions
+      setError({
+        message: err.message || 'An unexpected error occurred',
+        details: err.stack,
+        requestId: null,
+        timestamp: new Date().toISOString(),
+        endpoint: '/api/agent',
+        method: 'POST',
+        statusCode: null,
+        stack: err.stack,
+      });
     } finally {
       setLoading(false);
     }
+  }
+
+  // Retry last request
+  function retryLastRequest() {
+    if (lastRequest) {
+      setError(null);
+      setShowDiagnostics(false);
+      setInput(lastRequest.userInput);
+      // Use setTimeout to ensure state updates before calling sendMessage
+      setTimeout(() => {
+        sendMessage();
+      }, 0);
+    }
+  }
+
+  // Handle diagnostics drawer
+  function handleShowDiagnostics() {
+    setShowDiagnostics(true);
+  }
+
+  function handleCloseDiagnostics() {
+    setShowDiagnostics(false);
+  }
+
+  function handleDismissError() {
+    setError(null);
+    setShowDiagnostics(false);
+  }
+
+  // Handle import success
+  function handleImportSuccess(result) {
+    // Update session ID and session state
+    if (result.sessionId) {
+      setSessionId(result.sessionId);
+      localStorage.setItem('pokedm_session_id', result.sessionId);
+    }
+    
+    if (result.session) {
+      setSession(result.session);
+    }
+
+    // Load messages if they were imported
+    if (result.imported_components?.includes('messages') && result.messages && Array.isArray(result.messages)) {
+      setMessages(result.messages);
+    } else if (result.imported_components?.includes('messages')) {
+      // If messages were requested but not provided, clear messages
+      setMessages([]);
+    }
+
+    // Clear any errors
+    setError(null);
   }
 
   // Handle choice selection
@@ -129,6 +314,51 @@ export default function App() {
     // This allows them to modify the choice if needed
   }
 
+  // Handle keyboard navigation for choices
+  function handleChoiceKeyDown(e, choice, index) {
+    if (!hasChoices || !lastMessage.choices) return;
+
+    const choices = lastMessage.choices;
+    let newIndex = focusedChoiceIndex;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        newIndex = index < choices.length - 1 ? index + 1 : 0;
+        setFocusedChoiceIndex(newIndex);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        newIndex = index > 0 ? index - 1 : choices.length - 1;
+        setFocusedChoiceIndex(newIndex);
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        handleChoiceSelect(choice);
+        break;
+      case 'Home':
+        e.preventDefault();
+        setFocusedChoiceIndex(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        setFocusedChoiceIndex(choices.length - 1);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Reset focused choice index when choices change
+  useEffect(() => {
+    if (hasChoices) {
+      setFocusedChoiceIndex(0);
+    } else {
+      setFocusedChoiceIndex(-1);
+    }
+  }, [hasChoices]);
+
   // Handle Enter key
   function handleKeyPress(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -137,206 +367,98 @@ export default function App() {
     }
   }
 
-  // Get last message with choices
-  const lastMessage = messages[messages.length - 1];
-  const hasChoices = lastMessage?.choices && lastMessage.choices.length > 0;
-
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '1rem' }}>
-      <h1>PokeDM - Pokémon TTRPG Adventure</h1>
-
-      {/* Controls */}
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <div>
-          <label htmlFor="model-select" style={{ marginRight: '0.5rem' }}>
-            Model:
-          </label>
-          <select
-            id="model-select"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          >
-            <option value="gemini-2.5-flash">Google Gemini 2.5 Flash</option>
-            <option value="gemini-1.5-pro">Google Gemini 1.5 Pro</option>
-            <option value="gemini-1.5-flash">Google Gemini 1.5 Flash</option>
-            <option value="gemini-pro">Google Gemini Pro</option>
-            <option value="anthropic/claude-opus-4.5">Anthropic Claude Opus</option>
-            <option value="xai/grok-4.1-fast-non-reasoning">xAI Grok 4.1 Fast</option>
-          </select>
-        </div>
-        {sessionId && (
-          <div style={{ fontSize: '0.9em', color: '#666' }}>
-            Session: {sessionId.substring(0, 20)}...
-          </div>
-        )}
+    <AppShell>
+      {/* Status announcements for screen readers */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {loading && 'Thinking...'}
+        {hasChoices && !loading && `${lastMessage.choices.length} choices available. Use arrow keys to navigate.`}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-        {/* Main Chat Area */}
-        <div>
-          {/* Messages */}
-          <div
-            style={{
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              padding: '1rem',
-              height: '400px',
-              overflowY: 'auto',
-              marginBottom: '1rem',
-              backgroundColor: '#f9f9f9',
-            }}
-          >
-            {messages.length === 0 && (
-              <div style={{ color: '#666', fontStyle: 'italic' }}>
-                Welcome to PokeDM! Start your adventure by describing what you'd like to do.
-              </div>
+      {/* Error Banner */}
+      {error && (
+        <ErrorBanner
+          error={error.message}
+          details={error.details}
+          requestId={error.requestId}
+          statusCode={error.statusCode}
+          timestamp={error.timestamp}
+          endpoint={error.endpoint}
+          onRetry={retryLastRequest}
+          onDismiss={handleDismissError}
+          onCopyDiagnostics={handleShowDiagnostics}
+        />
+      )}
+
+      {/* Diagnostics Drawer */}
+      <DiagnosticsDrawer
+        isOpen={showDiagnostics}
+        onClose={handleCloseDiagnostics}
+        diagnostics={error || {}}
+      />
+
+      {/* Export Drawer */}
+      <ExportDrawer
+        isOpen={showExportDrawer}
+        onClose={() => setShowExportDrawer(false)}
+        session={session}
+        messages={messages}
+      />
+
+      {/* Import Drawer */}
+      <ImportDrawer
+        isOpen={showImportDrawer}
+        onClose={() => setShowImportDrawer(false)}
+        onImportSuccess={handleImportSuccess}
+      />
+
+      {/* Top Bar */}
+      <TopBar
+        model={model}
+        onModelChange={setModel}
+        availableModels={availableModels}
+        sessionId={sessionId}
+        onExportClick={() => setShowExportDrawer(true)}
+        onImportClick={() => setShowImportDrawer(true)}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[2fr_1fr] overflow-hidden min-h-0">
+        {/* Chat Area */}
+        <div className="flex flex-col overflow-hidden min-h-0">
+          {/* Chat Timeline */}
+          <div className="flex-1 overflow-hidden p-4 min-h-0">
+            <ChatTimeline messages={messages} loading={loading}>
+            {messages.map((msg, idx) =>
+              renderMessage(msg, idx, {
+                onChoiceSelect: handleChoiceSelect,
+                onChoiceKeyDown: handleChoiceKeyDown,
+                focusedChoiceIndex: focusedChoiceIndex,
+                setFocusedChoiceIndex: setFocusedChoiceIndex,
+              })
             )}
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                style={{
-                  marginBottom: '1rem',
-                  padding: '0.5rem',
-                  backgroundColor: msg.role === 'user' ? '#e3f2fd' : msg.role === 'system' ? '#fff3e0' : '#f5f5f5',
-                  borderRadius: '4px',
-                }}
-              >
-                <strong style={{ color: msg.role === 'user' ? '#1976d2' : msg.role === 'system' ? '#f57c00' : '#666' }}>
-                  {msg.role === 'user' ? 'You' : msg.role === 'system' ? 'System' : 'DM'}:
-                </strong>
-                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: '0.25rem' }}>
-                  {msg.content}
-                </div>
-                {msg.intent && (
-                  <div style={{ fontSize: '0.8em', color: '#999', marginTop: '0.25rem' }}>
-                    Intent: {msg.intent}
-                  </div>
-                )}
-              </div>
-            ))}
-            {loading && (
-              <div style={{ color: '#666', fontStyle: 'italic' }}>Thinking…</div>
-            )}
+          </ChatTimeline>
           </div>
 
-          {/* Choices */}
-          {hasChoices && !loading && (
-            <div style={{ marginBottom: '1rem' }}>
-              <h3>What would you like to do?</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {lastMessage.choices.map((choice, idx) => (
-                  <button
-                    key={choice.option_id || idx}
-                    onClick={() => handleChoiceSelect(choice)}
-                    style={{
-                      padding: '0.75rem',
-                      textAlign: 'left',
-                      border: '1px solid #ccc',
-                      borderRadius: '4px',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => (e.target.style.backgroundColor = '#f0f0f0')}
-                    onMouseLeave={(e) => (e.target.style.backgroundColor = '#fff')}
-                  >
-                    <strong>{choice.label}</strong>
-                    {choice.description && (
-                      <div style={{ fontSize: '0.9em', color: '#666', marginTop: '0.25rem' }}>
-                        {choice.description}
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Input */}
-          <div>
-            <textarea
-              rows={3}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyPress}
-              style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem' }}
-              placeholder="Type your message or action here and press Enter to send"
-              disabled={loading}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={loading || !input.trim() || !sessionId}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#1976d2',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {loading ? 'Sending...' : 'Send'}
-            </button>
-          </div>
+          {/* Composer */}
+          <Composer
+            input={input}
+            onInputChange={setInput}
+            onSend={sendMessage}
+            onKeyDown={handleKeyPress}
+            loading={loading}
+            disabled={!sessionId}
+          />
         </div>
 
-        {/* Session State Sidebar */}
-        <div>
-          <h3>Session State</h3>
-          <div
-            style={{
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              padding: '1rem',
-              backgroundColor: '#f9f9f9',
-              fontSize: '0.9em',
-            }}
-          >
-            {session ? (
-              <>
-                {session.session?.scene && (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong>Location:</strong> {session.session.scene.location_id || 'Unknown'}
-                    <div style={{ fontSize: '0.8em', color: '#666', marginTop: '0.25rem' }}>
-                      {session.session.scene.description}
-                    </div>
-                  </div>
-                )}
-                {session.characters && session.characters.length > 0 && (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong>Party:</strong>
-                    {session.characters.map((char) => (
-                      <div key={char.character_id} style={{ marginTop: '0.5rem' }}>
-                        <div>{char.trainer.name}</div>
-                        <div style={{ fontSize: '0.8em', color: '#666' }}>
-                          {char.pokemon_party.length} Pokémon
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {session.session?.battle_state?.active && (
-                  <div style={{ marginBottom: '1rem', color: '#d32f2f' }}>
-                    <strong>⚔️ Battle Active</strong>
-                    <div style={{ fontSize: '0.8em' }}>
-                      Round: {session.session.battle_state.round}
-                    </div>
-                  </div>
-                )}
-                {session.custom_dex && Object.keys(session.custom_dex.pokemon || {}).length > 0 && (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong>Custom Pokémon:</strong>
-                    <div style={{ fontSize: '0.8em', color: '#666' }}>
-                      {Object.keys(session.custom_dex.pokemon).length} discovered
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div style={{ color: '#666' }}>No session data yet</div>
-            )}
-          </div>
-        </div>
+        {/* Right Panel */}
+        <RightPanel session={session} />
       </div>
-    </div>
+    </AppShell>
   );
 }
