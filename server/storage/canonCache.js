@@ -2,7 +2,14 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { PokemonSessionSchema } from '../schemas/session.js';
 
-const SESSIONS_DIR = process.env.SESSIONS_DIR || './sessions';
+// Detect Vercel environment (check multiple possible env vars)
+const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV || process.env.VERCEL_URL);
+
+// In Vercel serverless, use /tmp for session storage (ephemeral)
+// In local dev, use ./sessions
+const SESSIONS_DIR = isVercel
+  ? '/tmp/sessions'
+  : (process.env.SESSIONS_DIR || './sessions');
 
 /**
  * Canon Cache System

@@ -3,11 +3,33 @@ import { join } from 'path';
 import { PokemonSessionSchema } from '../schemas/session.js';
 import { randomUUID } from 'crypto';
 
-const SESSIONS_DIR = process.env.SESSIONS_DIR || './sessions';
+// Detect Vercel environment (check multiple possible env vars)
+const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV || process.env.VERCEL_URL);
 
-// Ensure sessions directory exists
-if (!existsSync(SESSIONS_DIR)) {
-  mkdirSync(SESSIONS_DIR, { recursive: true });
+// In Vercel serverless, use /tmp for session storage (ephemeral)
+// In local dev, use ./sessions
+const SESSIONS_DIR = isVercel
+  ? '/tmp/sessions'
+  : (process.env.SESSIONS_DIR || './sessions');
+
+// Lazy initialization: ensure directory exists only when needed
+function ensureSessionsDir() {
+  try {
+    if (!existsSync(SESSIONS_DIR)) {
+      // In Vercel, ensure /tmp exists first
+      if (SESSIONS_DIR.startsWith('/tmp')) {
+        if (!existsSync('/tmp')) {
+          console.warn('/tmp directory does not exist in this environment');
+          return;
+        }
+      }
+      mkdirSync(SESSIONS_DIR, { recursive: true });
+    }
+  } catch (err) {
+    // In serverless environments, directory creation might fail
+    // Log warning but don't throw - we'll handle errors when reading/writing files
+    console.warn(`Could not create sessions directory ${SESSIONS_DIR}:`, err.message);
+  }
 }
 
 /**
@@ -16,6 +38,7 @@ if (!existsSync(SESSIONS_DIR)) {
  * @returns {object|null} Parsed and validated session or null if not found
  */
 export function loadSession(sessionId) {
+  ensureSessionsDir(); // Ensure directory exists before reading
   const sessionPath = join(SESSIONS_DIR, `${sessionId}.json`);
   
   if (!existsSync(sessionPath)) {
@@ -40,6 +63,7 @@ export function saveSession(sessionId, sessionData) {
   // Validate before saving
   const validated = PokemonSessionSchema.parse(sessionData);
   
+  ensureSessionsDir(); // Ensure directory exists before writing
   const sessionPath = join(SESSIONS_DIR, `${sessionId}.json`);
   writeFileSync(sessionPath, JSON.stringify(validated, null, 2), 'utf-8');
 }
@@ -201,6 +225,7 @@ export function createSession(campaignId = null, characterIds = []) {
  * @returns {string[]} Array of session IDs
  */
 export function listSessions(campaignId = null) {
+  ensureSessionsDir(); // Ensure directory exists before listing
   if (!existsSync(SESSIONS_DIR)) {
     return [];
   }
