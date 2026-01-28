@@ -15,7 +15,7 @@ export const fetchType = tool({
   execute: async ({ idOrName, sessionId }) => {
     // Check cache first
     if (sessionId) {
-      const cached = getCachedCanonData('types', idOrName, sessionId);
+      const cached = await getCachedCanonData('types', idOrName, sessionId);
       if (cached) {
         return cached;
       }
@@ -44,7 +44,7 @@ export const fetchType = tool({
 
       // Cache if sessionId provided
       if (sessionId) {
-        setCachedCanonData('types', idOrName, simplified, sessionId);
+        await setCachedCanonData('types', idOrName, simplified, sessionId);
       }
 
       return simplified;

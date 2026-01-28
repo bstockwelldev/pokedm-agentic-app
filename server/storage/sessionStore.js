@@ -1,80 +1,55 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
-import { join } from 'path';
+/**
+ * Session Store
+ * Provides session persistence using storage adapters
+ */
+
 import { PokemonSessionSchema } from '../schemas/session.js';
 import { randomUUID } from 'crypto';
+import { getDefaultAdapter } from './adapters/index.js';
 
-// Detect Vercel environment (check multiple possible env vars)
-const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV || process.env.VERCEL_URL);
+// Import adapters to register them
+import './adapters/file.js';
+import './adapters/postgres.js';
 
-// In Vercel serverless, use /tmp for session storage (ephemeral)
-// In local dev, use ./sessions
-const SESSIONS_DIR = isVercel
-  ? '/tmp/sessions'
-  : (process.env.SESSIONS_DIR || './sessions');
-
-// Lazy initialization: ensure directory exists only when needed
-function ensureSessionsDir() {
-  try {
-    if (!existsSync(SESSIONS_DIR)) {
-      // In Vercel, ensure /tmp exists first
-      if (SESSIONS_DIR.startsWith('/tmp')) {
-        if (!existsSync('/tmp')) {
-          console.warn('/tmp directory does not exist in this environment');
-          return;
-        }
-      }
-      mkdirSync(SESSIONS_DIR, { recursive: true });
-    }
-  } catch (err) {
-    // In serverless environments, directory creation might fail
-    // Log warning but don't throw - we'll handle errors when reading/writing files
-    console.warn(`Could not create sessions directory ${SESSIONS_DIR}:`, err.message);
-  }
-}
+// Get the default adapter instance
+const adapter = getDefaultAdapter();
 
 /**
- * Load session from JSON file with schema validation
+ * Load session from storage with schema validation
  * @param {string} sessionId - Session ID
- * @returns {object|null} Parsed and validated session or null if not found
+ * @returns {Promise<object|null>} Parsed and validated session or null if not found
  */
-export function loadSession(sessionId) {
-  ensureSessionsDir(); // Ensure directory exists before reading
-  const sessionPath = join(SESSIONS_DIR, `${sessionId}.json`);
-  
-  if (!existsSync(sessionPath)) {
-    return null;
-  }
-
+export async function loadSession(sessionId) {
   try {
-    const sessionData = JSON.parse(readFileSync(sessionPath, 'utf-8'));
-    return PokemonSessionSchema.parse(sessionData);
+    return await adapter.loadSession(sessionId);
   } catch (error) {
     console.error(`Error loading session ${sessionId}:`, error);
-    throw new Error(`Invalid session data: ${error.message}`);
+    throw error;
   }
 }
 
 /**
- * Save session to JSON file with validation
+ * Save session to storage with validation
  * @param {string} sessionId - Session ID
  * @param {object} sessionData - Session data to save
+ * @returns {Promise<void>}
  */
-export function saveSession(sessionId, sessionData) {
-  // Validate before saving
-  const validated = PokemonSessionSchema.parse(sessionData);
-  
-  ensureSessionsDir(); // Ensure directory exists before writing
-  const sessionPath = join(SESSIONS_DIR, `${sessionId}.json`);
-  writeFileSync(sessionPath, JSON.stringify(validated, null, 2), 'utf-8');
+export async function saveSession(sessionId, sessionData) {
+  try {
+    await adapter.saveSession(sessionId, sessionData);
+  } catch (error) {
+    console.error(`Error saving session ${sessionId}:`, error);
+    throw error;
+  }
 }
 
 /**
  * Create new session with default structure
  * @param {string} campaignId - Optional campaign ID
  * @param {string[]} characterIds - Optional character IDs
- * @returns {object} New session object
+ * @returns {Promise<object>} New session object
  */
-export function createSession(campaignId = null, characterIds = []) {
+export async function createSession(campaignId = null, characterIds = []) {
   const sessionId = randomUUID();
   const now = new Date().toISOString();
 
@@ -215,46 +190,31 @@ export function createSession(campaignId = null, characterIds = []) {
 
   // Validate and save
   const validated = PokemonSessionSchema.parse(newSession);
-  saveSession(sessionId, validated);
+  await saveSession(sessionId, validated);
   return validated;
 }
 
 /**
  * List all sessions for a campaign
  * @param {string} campaignId - Campaign ID (optional)
- * @returns {string[]} Array of session IDs
+ * @returns {Promise<string[]>} Array of session IDs
  */
-export function listSessions(campaignId = null) {
-  ensureSessionsDir(); // Ensure directory exists before listing
-  if (!existsSync(SESSIONS_DIR)) {
-    return [];
+export async function listSessions(campaignId = null) {
+  try {
+    return await adapter.listSessions(campaignId);
+  } catch (error) {
+    console.error('Error listing sessions:', error);
+    throw error;
   }
-
-  const files = readdirSync(SESSIONS_DIR).filter((f) => f.endsWith('.json'));
-  const sessionIds = files.map((f) => f.replace('.json', ''));
-
-  if (!campaignId) {
-    return sessionIds;
-  }
-
-  // Filter by campaign
-  return sessionIds.filter((sessionId) => {
-    try {
-      const session = loadSession(sessionId);
-      return session?.session?.campaign_id === campaignId;
-    } catch {
-      return false;
-    }
-  });
 }
 
 /**
  * Get custom dex registry
  * @param {string} sessionId - Session ID
- * @returns {object} Custom dex pokemon registry
+ * @returns {Promise<object>} Custom dex pokemon registry
  */
-export function getCustomDex(sessionId) {
-  const session = loadSession(sessionId);
+export async function getCustomDex(sessionId) {
+  const session = await loadSession(sessionId);
   return session?.custom_dex?.pokemon || {};
 }
 
@@ -262,23 +222,24 @@ export function getCustomDex(sessionId) {
  * Add custom Pokémon to registry
  * @param {string} sessionId - Session ID
  * @param {object} customPokemon - Custom Pokémon data
+ * @returns {Promise<void>}
  */
-export function addCustomPokemon(sessionId, customPokemon) {
-  const session = loadSession(sessionId);
+export async function addCustomPokemon(sessionId, customPokemon) {
+  const session = await loadSession(sessionId);
   if (!session) {
     throw new Error(`Session ${sessionId} not found`);
   }
 
   session.custom_dex.pokemon[customPokemon.custom_species_id] = customPokemon;
-  saveSession(sessionId, session);
+  await saveSession(sessionId, session);
 }
 
 /**
  * Get canon cache (read-only)
  * @param {string} sessionId - Session ID
- * @returns {object} Canon cache object
+ * @returns {Promise<object|null>} Canon cache object
  */
-export function getCanonCache(sessionId) {
-  const session = loadSession(sessionId);
+export async function getCanonCache(sessionId) {
+  const session = await loadSession(sessionId);
   return session?.dex?.canon_cache || null;
 }

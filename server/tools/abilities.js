@@ -15,7 +15,7 @@ export const fetchAbility = tool({
   execute: async ({ idOrName, sessionId }) => {
     // Check cache first
     if (sessionId) {
-      const cached = getCachedCanonData('abilities', idOrName, sessionId);
+      const cached = await getCachedCanonData('abilities', idOrName, sessionId);
       if (cached) {
         return cached;
       }
@@ -41,7 +41,7 @@ export const fetchAbility = tool({
 
       // Cache if sessionId provided
       if (sessionId) {
-        setCachedCanonData('abilities', idOrName, simplified, sessionId);
+        await setCachedCanonData('abilities', idOrName, simplified, sessionId);
       }
 
       return simplified;

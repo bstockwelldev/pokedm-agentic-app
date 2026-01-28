@@ -22,7 +22,7 @@ export const fetchGeneration = tool({
     
     // Check cache first
     if (sessionId) {
-      const cached = getCachedCanonData('generations', idStr, sessionId);
+      const cached = await getCachedCanonData('generations', idStr, sessionId);
       if (cached) {
         return cached;
       }
@@ -44,7 +44,7 @@ export const fetchGeneration = tool({
 
       // Cache if sessionId provided
       if (sessionId) {
-        setCachedCanonData('generations', idStr, simplified, sessionId);
+        await setCachedCanonData('generations', idStr, simplified, sessionId);
       }
 
       return simplified;

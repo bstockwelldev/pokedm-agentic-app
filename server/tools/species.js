@@ -15,7 +15,7 @@ export const fetchPokemonSpecies = tool({
   execute: async ({ idOrName, sessionId }) => {
     // Check cache first
     if (sessionId) {
-      const cached = getCachedCanonData('species', idOrName, sessionId);
+      const cached = await getCachedCanonData('species', idOrName, sessionId);
       if (cached) {
         return cached;
       }
@@ -55,7 +55,7 @@ export const fetchPokemonSpecies = tool({
 
       // Cache if sessionId provided
       if (sessionId) {
-        setCachedCanonData('species', idOrName, simplified, sessionId);
+        await setCachedCanonData('species', idOrName, simplified, sessionId);
       }
 
       return simplified;

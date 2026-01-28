@@ -15,7 +15,7 @@ export const fetchMove = tool({
   execute: async ({ idOrName, sessionId }) => {
     // Check cache first
     if (sessionId) {
-      const cached = getCachedCanonData('moves', idOrName, sessionId);
+      const cached = await getCachedCanonData('moves', idOrName, sessionId);
       if (cached) {
         return cached;
       }
@@ -47,7 +47,7 @@ export const fetchMove = tool({
 
       // Cache if sessionId provided
       if (sessionId) {
-        setCachedCanonData('moves', idOrName, simplified, sessionId);
+        await setCachedCanonData('moves', idOrName, simplified, sessionId);
       }
 
       return simplified;

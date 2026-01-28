@@ -66,7 +66,7 @@ export const createCustomPokemon = tool({
     }),
   }),
   execute: async (data) => {
-    const session = loadSession(data.sessionId);
+    const session = await loadSession(data.sessionId);
     if (!session) {
       throw new Error(`Session ${data.sessionId} not found`);
     }
@@ -87,7 +87,7 @@ export const createCustomPokemon = tool({
     }
 
     // Check if already exists
-    const existing = getCustomDex(data.sessionId);
+    const existing = await getCustomDex(data.sessionId);
     if (existing[data.custom_species_id]) {
       throw new Error(`Custom Pokémon ${data.custom_species_id} already exists`);
     }
@@ -96,7 +96,7 @@ export const createCustomPokemon = tool({
     const customPokemon = CustomPokemonSchema.parse(data);
 
     // Add to custom dex
-    addCustomPokemon(data.sessionId, customPokemon);
+    await addCustomPokemon(data.sessionId, customPokemon);
 
     return {
       success: true,
@@ -136,7 +136,7 @@ export const listCustomPokemon = tool({
     sessionId: z.string(),
   }),
   execute: async ({ sessionId }) => {
-    const customDex = getCustomDex(sessionId);
+    const customDex = await getCustomDex(sessionId);
     return {
       count: Object.keys(customDex).length,
       pokemon: Object.values(customDex),

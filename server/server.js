@@ -337,11 +337,11 @@ app.post(agentPath, async (req, res) => {
     // Load or create session
     let session = null;
     if (sessionId) {
-      session = loadSession(sessionId);
+      session = await loadSession(sessionId);
     }
 
     if (!session) {
-      session = createSession(campaignId || null, characterIds || []);
+      session = await createSession(campaignId || null, characterIds || []);
     }
 
     // Handle special commands before routing
@@ -403,14 +403,14 @@ app.post(agentPath, async (req, res) => {
 
     // Save updated session if state was modified
     if (result.updatedSession) {
-      saveSession(session.session.session_id, result.updatedSession);
+      await saveSession(session.session.session_id, result.updatedSession);
       session = result.updatedSession;
     }
     
     // If custom Pokémon was created, reload to get updated custom_dex
     // (createCustomPokemon tool saves the session, so reload will get latest)
     if (result.customPokemon) {
-      session = loadSession(session.session.session_id);
+      session = await loadSession(session.session.session_id);
     }
 
     // Return response
@@ -505,7 +505,7 @@ app.post('/api/import', async (req, res) => {
       migrated = true;
     } else {
       // Standard import flow
-      newSession = createSession(campaignId, characterIds);
+      newSession = await createSession(campaignId, characterIds);
     }
 
     // Merge imported components (applies to both legacy and standard imports)
@@ -551,7 +551,7 @@ app.post('/api/import', async (req, res) => {
     // Validate merged session
     try {
       const validated = PokemonSessionSchema.parse(newSession);
-      saveSession(validated.session.session_id, validated);
+      await saveSession(validated.session.session_id, validated);
 
       const response = {
         sessionId: validated.session.session_id,

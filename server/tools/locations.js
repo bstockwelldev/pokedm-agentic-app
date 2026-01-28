@@ -16,7 +16,7 @@ export const fetchLocation = tool({
   execute: async ({ idOrName, sessionId }) => {
     // Check cache first
     if (sessionId) {
-      const cached = getCachedCanonData('locations', idOrName, sessionId);
+      const cached = await getCachedCanonData('locations', idOrName, sessionId);
       if (cached) {
         return cached;
       }
@@ -39,7 +39,7 @@ export const fetchLocation = tool({
 
       // Cache if sessionId provided
       if (sessionId) {
-        setCachedCanonData('locations', idOrName, simplified, sessionId);
+        await setCachedCanonData('locations', idOrName, simplified, sessionId);
       }
 
       return simplified;

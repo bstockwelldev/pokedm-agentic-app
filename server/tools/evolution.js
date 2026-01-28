@@ -17,7 +17,7 @@ export const fetchEvolutionChain = tool({
     
     // Check cache first
     if (sessionId) {
-      const cached = getCachedCanonData('evolution_chains', idStr, sessionId);
+      const cached = await getCachedCanonData('evolution_chains', idStr, sessionId);
       if (cached) {
         return cached;
       }
@@ -54,7 +54,7 @@ export const fetchEvolutionChain = tool({
 
       // Cache if sessionId provided
       if (sessionId) {
-        setCachedCanonData('evolution_chains', idStr, simplified, sessionId);
+        await setCachedCanonData('evolution_chains', idStr, simplified, sessionId);
       }
 
       return simplified;
