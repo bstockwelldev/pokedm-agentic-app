@@ -11,6 +11,7 @@ import { queryStateAgent } from '../agents/state.js';
 import { fetchLore } from '../agents/lore.js';
 import { createCustomPokemonAgent } from '../agents/design.js';
 import { loadSession, createSession, saveSession } from '../storage/sessionStore.js';
+import logger from '../lib/logger.js';
 
 /**
  * Orchestrate agent execution based on user input
@@ -145,7 +146,7 @@ Create a narrative recap (2-3 paragraphs) that brings the player back into the s
     
     return result.text;
   } catch (error) {
-    console.error('AI recap generation failed, using simple recap:', error);
+    logger.error('AI recap generation failed, using simple recap', { error: error.message, stack: error.stack });
     return simpleRecap;
   }
 }

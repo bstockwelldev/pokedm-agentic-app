@@ -4,6 +4,7 @@ import { getModel } from '../lib/modelProvider.js';
 import { dmPrompt } from '../prompts/dm.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 import { updateSessionState } from './state.js';
+import logger from '../lib/logger.js';
 
 /**
  * DM Agent Response Schema
@@ -98,7 +99,7 @@ Provide narration and 2-4 choices for the players.`;
 
         updatedSession = updateSessionState(session, updates);
       } catch (error) {
-        console.warn('Failed to update session state with choices:', error);
+        logger.warn('Failed to update session state with choices', { error: error.message, stack: error.stack });
         // Continue without state update
       }
     }
@@ -110,7 +111,7 @@ Provide narration and 2-4 choices for the players.`;
       updatedSession: updatedSession,
     };
   } catch (error) {
-    console.error('DM Agent error:', error);
+    logger.error('DM Agent error', { error: error.message, stack: error.stack });
     throw error;
   }
 }

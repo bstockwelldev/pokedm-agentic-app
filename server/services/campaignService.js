@@ -6,6 +6,7 @@
 import { loadSession, listSessions, saveSession } from '../storage/sessionStore.js';
 import { randomUUID } from 'crypto';
 import { CampaignSchema } from '../schemas/session.js';
+import logger from '../lib/logger.js';
 
 /**
  * Create a new campaign
@@ -123,7 +124,7 @@ export async function updateCampaign(campaignId, updates) {
         await saveSession(sessionId, session);
       }
     } catch (error) {
-      console.warn(`Failed to update campaign in session ${sessionId}:`, error);
+      logger.warn('Failed to update campaign in session', { sessionId, error: error.message, stack: error.stack });
       continue;
     }
   }
@@ -150,7 +151,7 @@ export async function deleteCampaign(campaignId) {
     try {
       await adapter.deleteSession(sessionId);
     } catch (error) {
-      console.warn(`Failed to delete session ${sessionId}:`, error);
+      logger.warn('Failed to delete session', { sessionId, error: error.message, stack: error.stack });
     }
   }
 
