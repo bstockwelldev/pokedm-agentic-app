@@ -509,4 +509,9 @@ export {
   StateVersioningSchema,
   SpeciesRefSchema,
   FormRefSchema,
+  RegionSchema,
+  LocationSchema,
+  FactionSchema,
+  RecurringNPCSchema,
+  WorldFactSchema,
 };

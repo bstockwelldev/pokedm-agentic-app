@@ -29,10 +29,10 @@ export const fetchGeneration = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/generation/${id}/`);
-      if (!response.ok) {
-        throw new Error(`Generation not found: ${id}`);
-      }
+      const response = await fetchPokeAPI(
+        `https://pokeapi.co/api/v2/generation/${id}/`,
+        'Generation'
+      );
       const data = await response.json();
 
       // Simplify for reference

@@ -1,41 +1,36 @@
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 import { getModel } from '../lib/modelProvider.js';
 import { routerPrompt } from '../prompts/router.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 
 /**
+ * Intent classification schema
+ */
+const IntentSchema = z.object({
+  intent: z.enum(['narration', 'roll', 'state', 'lore', 'design']).describe('The classified intent category'),
+  confidence: z.number().min(0).max(1).describe('Confidence level of the classification (0-1)'),
+  reasoning: z.string().optional().describe('Brief reasoning for the classification'),
+});
+
+/**
  * Router Agent
- * Classifies user intent and routes to appropriate agent
+ * Classifies user intent and routes to appropriate agent using structured output
  */
 export async function routeIntent(userInput, sessionState, model = null) {
   const config = getAgentConfig('router');
   const modelName = model || config.defaultModel;
 
   try {
-    const result = await generateText({
+    const result = await generateObject({
       model: await getModel(modelName),
+      schema: IntentSchema,
       prompt: routerPrompt.replace('{userInput}', userInput),
       maxSteps: config.maxSteps,
     });
 
-    // Extract intent from response (should be one word)
-    const intent = result.text.trim().toLowerCase();
-    
-    // Validate intent
-    const validIntents = ['narration', 'roll', 'state', 'lore', 'design'];
-    if (validIntents.includes(intent)) {
-      return intent;
-    }
-
-    // Fallback: try to extract intent from text
-    for (const validIntent of validIntents) {
-      if (result.text.toLowerCase().includes(validIntent)) {
-        return validIntent;
-      }
-    }
-
-    // Default to narration if unclear
-    return 'narration';
+    // Return the classified intent
+    return result.object.intent;
   } catch (error) {
     console.error('Router Agent error:', error);
     // Default to narration on error

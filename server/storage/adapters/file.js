@@ -19,12 +19,46 @@ const SESSIONS_DIR = isVercel
   : (process.env.SESSIONS_DIR || './sessions');
 
 /**
+ * Write Queue for Transaction Safety
+ * Ensures writes to the same session are serialized
+ */
+class WriteQueue {
+  constructor() {
+    this.queues = new Map(); // Map<sessionId, Promise[]>
+  }
+
+  async enqueue(sessionId, operation) {
+    // Get or create queue for this session
+    if (!this.queues.has(sessionId)) {
+      this.queues.set(sessionId, Promise.resolve());
+    }
+
+    // Chain the operation after the current queue
+    const queue = this.queues.get(sessionId);
+    const newQueue = queue.then(async () => {
+      try {
+        return await operation();
+      } finally {
+        // Remove queue if empty (all operations completed)
+        if (this.queues.get(sessionId) === newQueue) {
+          this.queues.delete(sessionId);
+        }
+      }
+    });
+
+    this.queues.set(sessionId, newQueue);
+    return newQueue;
+  }
+}
+
+/**
  * File-based Storage Adapter
  * Stores sessions as JSON files
  */
 export class FileStorageAdapter extends StorageAdapter {
   constructor() {
     super();
+    this.writeQueue = new WriteQueue();
     this.ensureSessionsDir();
   }
 
@@ -64,28 +98,31 @@ export class FileStorageAdapter extends StorageAdapter {
   }
 
   async saveSession(sessionId, sessionData) {
-    // Validate before saving
-    const validated = PokemonSessionSchema.parse(sessionData);
-    
-    this.ensureSessionsDir();
-    const sessionPath = this.getSessionPath(sessionId);
-    
-    // Atomic write: write to temp file, then rename
-    const tempPath = `${sessionPath}.tmp`;
-    try {
-      await fs.writeFile(tempPath, JSON.stringify(validated, null, 2), 'utf-8');
-      await fs.rename(tempPath, sessionPath);
-    } catch (error) {
-      // Clean up temp file on error
+    // Queue write operations for this session to prevent concurrent writes
+    return this.writeQueue.enqueue(sessionId, async () => {
+      // Validate before saving
+      const validated = PokemonSessionSchema.parse(sessionData);
+      
+      this.ensureSessionsDir();
+      const sessionPath = this.getSessionPath(sessionId);
+      
+      // Atomic write: write to temp file, then rename
+      const tempPath = `${sessionPath}.tmp`;
       try {
-        if (existsSync(tempPath)) {
-          await fs.unlink(tempPath);
+        await fs.writeFile(tempPath, JSON.stringify(validated, null, 2), 'utf-8');
+        await fs.rename(tempPath, sessionPath);
+      } catch (error) {
+        // Clean up temp file on error
+        try {
+          if (existsSync(tempPath)) {
+            await fs.unlink(tempPath);
+          }
+        } catch (cleanupError) {
+          // Ignore cleanup errors
         }
-      } catch (cleanupError) {
-        // Ignore cleanup errors
+        throw new StorageError(`Error saving session ${sessionId}: ${error.message}`, 'SAVE_ERROR');
       }
-      throw new StorageError(`Error saving session ${sessionId}: ${error.message}`, 'SAVE_ERROR');
-    }
+    });
   }
 
   async listSessions(campaignId = null) {
@@ -163,55 +200,89 @@ export class FileStorageAdapter extends StorageAdapter {
   }
 
   async setCachedCanonData(sessionId, kind, idOrName, data) {
-    const session = await this.loadSession(sessionId);
-    if (!session) {
-      throw new StorageError(`Session ${sessionId} not found`, 'SESSION_NOT_FOUND');
-    }
-
-    // Check max entries limit
-    const cache = session.dex.canon_cache[kind];
-    const maxEntries = session.dex.cache_policy.max_entries_per_kind;
-    
-    // LRU eviction: remove oldest entry if at limit
-    if (Object.keys(cache).length >= maxEntries && !cache[idOrName]) {
-      // Find oldest entry by _cached_at timestamp
-      const entries = Object.entries(cache).map(([key, value]) => ({
-        key,
-        cachedAt: value._cached_at || 0,
-      }));
-      entries.sort((a, b) => a.cachedAt - b.cachedAt);
-      if (entries.length > 0) {
-        delete cache[entries[0].key];
+    // Queue cache updates to prevent concurrent modifications
+    return this.writeQueue.enqueue(sessionId, async () => {
+      const session = await this.loadSession(sessionId);
+      if (!session) {
+        throw new StorageError(`Session ${sessionId} not found`, 'SESSION_NOT_FOUND');
       }
+
+      // Check max entries limit
+      const cache = session.dex.canon_cache[kind];
+      const maxEntries = session.dex.cache_policy.max_entries_per_kind;
+      
+      // LRU eviction: remove oldest entry if at limit
+      if (Object.keys(cache).length >= maxEntries && !cache[idOrName]) {
+        // Find oldest entry by _cached_at timestamp
+        const entries = Object.entries(cache).map(([key, value]) => ({
+          key,
+          cachedAt: value._cached_at || 0,
+        }));
+        entries.sort((a, b) => a.cachedAt - b.cachedAt);
+        if (entries.length > 0) {
+          delete cache[entries[0].key];
+        }
+      }
+
+      // Store with timestamp
+      cache[idOrName] = {
+        ...data,
+        _cached_at: Date.now(),
+      };
+
+      // Save updated session (this will also be queued, but that's fine - it's the same queue)
+      await this.saveSessionInternal(sessionId, session);
+    });
+  }
+
+  /**
+   * Internal save method that bypasses queue (used by setCachedCanonData to avoid double-queuing)
+   */
+  async saveSessionInternal(sessionId, sessionData) {
+    // Validate before saving
+    const validated = PokemonSessionSchema.parse(sessionData);
+    
+    this.ensureSessionsDir();
+    const sessionPath = this.getSessionPath(sessionId);
+    
+    // Atomic write: write to temp file, then rename
+    const tempPath = `${sessionPath}.tmp`;
+    try {
+      await fs.writeFile(tempPath, JSON.stringify(validated, null, 2), 'utf-8');
+      await fs.rename(tempPath, sessionPath);
+    } catch (error) {
+      // Clean up temp file on error
+      try {
+        if (existsSync(tempPath)) {
+          await fs.unlink(tempPath);
+        }
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+      throw new StorageError(`Error saving session ${sessionId}: ${error.message}`, 'SAVE_ERROR');
     }
-
-    // Store with timestamp
-    cache[idOrName] = {
-      ...data,
-      _cached_at: Date.now(),
-    };
-
-    // Save updated session
-    await this.saveSession(sessionId, session);
   }
 
   async invalidateCache(sessionId, kind = null) {
-    const session = await this.loadSession(sessionId);
-    if (!session) {
-      return;
-    }
+    // Queue cache invalidation to prevent concurrent modifications
+    return this.writeQueue.enqueue(sessionId, async () => {
+      const session = await this.loadSession(sessionId);
+      if (!session) {
+        return;
+      }
 
-    if (kind) {
-      // Clear specific kind
-      session.dex.canon_cache[kind] = {};
-    } else {
-      // Clear all caches
-      Object.keys(session.dex.canon_cache).forEach((k) => {
-        session.dex.canon_cache[k] = {};
-      });
-    }
+      if (kind) {
+        // Clear specific kind
+        session.dex.canon_cache[kind] = {};
+      } else {
+        // Clear all caches
+        Object.keys(session.dex.canon_cache).forEach((k) => {
+          session.dex.canon_cache[k] = {};
+        });
+      }
 
-    await this.saveSession(sessionId, session);
+      await this.saveSessionInternal(sessionId, session);
+    });
   }
 }
 

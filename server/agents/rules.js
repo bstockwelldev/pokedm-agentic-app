@@ -4,6 +4,7 @@ import { rulesPrompt } from '../prompts/rules.js';
 import { getAgentConfig, getAgentTools } from '../config/agentConfig.js';
 import { getPokeAPITools } from '../tools/index.js';
 import { wrapToolsWithSession } from './toolHelpers.js';
+import { applyProgression } from '../services/progressionService.js';
 
 /**
  * Rules Agent
@@ -49,11 +50,36 @@ Calculate the result and provide a simple explanation.`;
       maxSteps: config.maxSteps,
     });
 
+    // Check if this was a battle/encounter that should trigger progression
+    const battleState = extractBattleState(result.text, session);
+    let updatedSession = null;
+
+    // If battle completed, apply progression
+    if (battleState && !battleState.active && session.session?.battle_state?.active) {
+      // Battle just ended - determine outcome from context
+      const battleOutcome = determineBattleOutcome(result.text, session);
+      
+      const progressionEvent = {
+        type: 'battle',
+        outcome: battleOutcome,
+        participants: battleState.turn_order || [],
+        firstTime: false, // Could be enhanced to track first-time battles
+        typeAdvantageUsed: false, // Could be enhanced to track type advantage usage
+      };
+
+      try {
+        updatedSession = applyProgression(session, progressionEvent);
+      } catch (progressionError) {
+        console.warn('Failed to apply progression:', progressionError);
+        // Continue without progression update
+      }
+    }
+
     return {
       result: result.text,
-      battleState: extractBattleState(result.text, session),
+      battleState: battleState,
       steps: result.steps || [],
-      updatedSession: null, // Rules agent doesn't mutate state directly
+      updatedSession: updatedSession,
     };
   } catch (error) {
     console.error('Rules Agent error:', error);
@@ -97,4 +123,16 @@ function extractBattleState(text, session) {
 
   // Return current battle state (would be updated by state agent)
   return session.session.battle_state;
+}
+
+function determineBattleOutcome(text, session) {
+  // Simple heuristic to determine battle outcome from text
+  const lowerText = text.toLowerCase();
+  if (lowerText.includes('win') || lowerText.includes('victory') || lowerText.includes('defeated')) {
+    return 'win';
+  }
+  if (lowerText.includes('lose') || lowerText.includes('defeat') || lowerText.includes('fainted')) {
+    return 'loss';
+  }
+  return 'unknown';
 }

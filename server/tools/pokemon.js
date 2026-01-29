@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { getCachedCanonData, setCachedCanonData, isGenerationAllowed } from '../storage/canonCache.js';
+import { retryApiCall } from '../lib/retryUtils.js';
 
 /**
  * Fetch Pokémon data from PokeAPI with caching
@@ -22,23 +23,32 @@ export const fetchPokemon = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${idOrName.toLowerCase()}/`);
-      if (!response.ok) {
-        throw new Error(`Pokémon not found: ${idOrName}`);
-      }
+      const response = await retryApiCall(async () => {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${idOrName.toLowerCase()}/`);
+        if (!res.ok) {
+          throw new Error(`Pokémon not found: ${idOrName}`);
+        }
+        return res;
+      });
+      
       const data = await response.json();
 
       // Check generation (if available)
       if (data.species?.url) {
-        const speciesResponse = await fetch(data.species.url);
-        if (speciesResponse.ok) {
-          const speciesData = await speciesResponse.json();
-          const generation = speciesData.generation?.url
-            ? parseInt(speciesData.generation.url.split('/').slice(-2, -1)[0])
-            : null;
-          if (generation && !isGenerationAllowed(generation)) {
-            throw new Error(`Generation ${generation} not allowed (only 1-9)`);
+        const speciesResponse = await retryApiCall(async () => {
+          const res = await fetch(data.species.url);
+          if (!res.ok) {
+            throw new Error(`Species data not found for ${idOrName}`);
           }
+          return res;
+        });
+        
+        const speciesData = await speciesResponse.json();
+        const generation = speciesData.generation?.url
+          ? parseInt(speciesData.generation.url.split('/').slice(-2, -1)[0])
+          : null;
+        if (generation && !isGenerationAllowed(generation)) {
+          throw new Error(`Generation ${generation} not allowed (only 1-9)`);
         }
       }
 

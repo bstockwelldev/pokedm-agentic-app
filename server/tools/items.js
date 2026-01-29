@@ -22,10 +22,10 @@ export const fetchItem = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/item/${idOrName.toLowerCase()}/`);
-      if (!response.ok) {
-        throw new Error(`Item not found: ${idOrName}`);
-      }
+      const response = await fetchPokeAPI(
+        `https://pokeapi.co/api/v2/item/${idOrName.toLowerCase()}/`,
+        'Item'
+      );
       const data = await response.json();
 
       // Get English effect

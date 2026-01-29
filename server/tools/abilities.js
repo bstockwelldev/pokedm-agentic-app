@@ -22,10 +22,10 @@ export const fetchAbility = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/ability/${idOrName.toLowerCase()}/`);
-      if (!response.ok) {
-        throw new Error(`Ability not found: ${idOrName}`);
-      }
+      const response = await fetchPokeAPI(
+        `https://pokeapi.co/api/v2/ability/${idOrName.toLowerCase()}/`,
+        'Ability'
+      );
       const data = await response.json();
 
       // Get English effect

@@ -22,10 +22,10 @@ export const fetchMove = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/move/${idOrName.toLowerCase()}/`);
-      if (!response.ok) {
-        throw new Error(`Move not found: ${idOrName}`);
-      }
+      const response = await fetchPokeAPI(
+        `https://pokeapi.co/api/v2/move/${idOrName.toLowerCase()}/`,
+        'Move'
+      );
       const data = await response.json();
 
       // Get English effect

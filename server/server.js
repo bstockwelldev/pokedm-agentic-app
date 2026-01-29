@@ -1,33 +1,29 @@
 // PokeDM Agentic Flow Server
 // Multi-agent system using Vercel AI SDK v6 with Router/DM/Rules/State/Lore/Design agents
 
-// #region agent log
-console.log('[DEBUG] server/server.js: Module loading', {
-  vercel: !!process.env.VERCEL,
-  nodeEnv: process.env.NODE_ENV,
-  hypothesisId: 'C',
-});
-// #endregion
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import crypto, { randomUUID } from 'crypto';
 
-// Agent imports
-import { routeIntent } from './agents/router.js';
-import { runDMAgent } from './agents/dm.js';
-import { runRulesAgent } from './agents/rules.js';
-import { queryStateAgent } from './agents/state.js';
-import { fetchLore } from './agents/lore.js';
-import { createCustomPokemonAgent } from './agents/design.js';
+// Import logger
+import logger, { Logger } from './lib/logger.js';
+
+// Import middleware
+import { validateAgentRequest } from './middleware/validateRequest.js';
+import errorHandler from './middleware/errorHandler.js';
 
 // Storage imports
-import { loadSession, saveSession, createSession } from './storage/sessionStore.js';
 import { PokemonSessionSchema } from './schemas/session.js';
 import './storage/init.js'; // Ensure sessions directory exists
 
 dotenv.config();
+
+// Module loading log
+logger.debug('Module loading', {
+  vercel: !!process.env.VERCEL,
+  nodeEnv: process.env.NODE_ENV,
+});
 
 const app = express();
 app.use(cors());
@@ -35,18 +31,20 @@ app.use(express.json());
 
 // Request ID middleware - add unique ID to all requests for traceability
 app.use((req, res, next) => {
-  // #region agent log
-  console.log('[DEBUG] server/server.js: Request received in Express', {
+  req.requestId = crypto.randomUUID();
+  res.setHeader('X-Request-ID', req.requestId);
+  
+  // Create request-scoped logger
+  req.logger = logger.child(req.requestId);
+  
+  req.logger.debug('Request received', {
     method: req.method,
     url: req.url,
     path: req.path,
     originalUrl: req.originalUrl,
     baseUrl: req.baseUrl,
-    hypothesisId: 'A',
   });
-  // #endregion
-  req.requestId = crypto.randomUUID();
-  res.setHeader('X-Request-ID', req.requestId);
+  
   next();
 });
 
@@ -127,59 +125,15 @@ function generateSimpleRecap(session) {
   return recaps.join('\n\n');
 }
 
-/**
- * Generate an AI-powered recap from session history
- * @param {object} session - Session object
- * @param {string} model - Model to use for generation
- * @returns {Promise<string>} Recap text
- */
-async function generateRecap(session, model) {
-  // First, gather all recap data
-  const recapData = generateSimpleRecap(session);
-  
-  // If there's minimal data, just return the simple recap
-  if (recapData === 'No recap data available yet. Start your adventure to build up session history!') {
-    return recapData;
-  }
-  
-  // Use DM agent to generate a narrative recap
-  try {
-    const { generateText } = await import('ai');
-    const { getModel } = await import('./lib/modelProvider.js');
-    
-    const recapPrompt = `You are a friendly narrator for a Pokémon adventure session. 
+// generateRecap function moved to services/agentOrchestrator.js
 
-The player has requested a recap of their adventure so far. Based on the following session data, create a warm, engaging recap that:
-
-1. Summarizes what has happened in the adventure
-2. Highlights key moments and discoveries
-3. Reminds them of their current situation and objectives
-4. Uses a friendly, encouraging tone suitable for all ages
-
-## Session Data
-
-${recapData}
-
-Create a narrative recap (2-3 paragraphs) that brings the player back into the story.`;
-
-    const result = await generateText({
-      model: await getModel(model),
-      prompt: recapPrompt,
-      maxSteps: 1,
-    });
-    
-    return result.text;
-  } catch (error) {
-    console.error('AI recap generation failed, using simple recap:', error);
-    return recapData;
-  }
-}
-
-// Health check endpoint
+// Health check endpoint (no versioning needed)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// API Version 1 routes prefix
+const API_V1 = '/api/v1';
 
 // In Vercel, each serverless function receives requests with the full path
 // So /api/agent requests go to api/agent.js, and the Express app sees /api/agent
@@ -187,57 +141,64 @@ app.get('/api/health', (req, res) => {
 const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
 // Always use full paths - Vercel preserves the path when calling serverless functions
 const agentPath = '/api/agent';
+const agentV1Path = '/api/v1/agent';
 const chatPath = '/api/chat';
+const chatV1Path = '/api/v1/chat';
 
 /**
- * GET /api/models
+ * GET /api/v1/models
  * 
  * Fetch available models from all providers
  * Returns: { models: Array<{id, name, provider}> }
  * 
- * Note: In Vercel, when served from api/models.js, the path is preserved as /api/models
+ * Note: Legacy /api/models endpoint maintained for backward compatibility
  */
-app.get('/api/models', async (req, res) => {
-  // #region agent log
-  console.log('[DEBUG] server/server.js: /api/models route matched', {
+app.get(`${API_V1}/models`, async (req, res) => {
+  req.logger.debug('/api/models route matched', {
     method: req.method,
     path: req.path,
     url: req.url,
-    hypothesisId: 'A',
   });
-  // #endregion
+  
   try {
     const { getAllModels } = await import('./lib/modelFetcher.js');
-    // #region agent log
-    console.log('[DEBUG] server/server.js: modelFetcher imported', {
+    req.logger.debug('modelFetcher imported', {
       hasGetAllModels: !!getAllModels,
-      hypothesisId: 'C',
     });
-    // #endregion
+    
     const models = await getAllModels();
-    // #region agent log
-    console.log('[DEBUG] server/server.js: models fetched', {
+    req.logger.debug('models fetched', {
       modelCount: models.length,
-      hypothesisId: 'A',
     });
-    // #endregion
+    
     const groqCount = models.filter(m => m.provider === 'groq').length;
     const geminiCount = models.filter(m => m.provider === 'google').length;
-    console.log(`[MODELS] API endpoint returning ${models.length} models (${geminiCount} Gemini, ${groqCount} Groq)`);
-    console.log(`[MODELS] Model IDs:`, models.map(m => m.id).join(', '));
+    req.logger.info(`API endpoint returning ${models.length} models (${geminiCount} Gemini, ${groqCount} Groq)`, {
+      modelCount: models.length,
+      geminiCount,
+      groqCount,
+      modelIds: models.map(m => m.id),
+    });
+    
     res.json({ models });
   } catch (err) {
-    console.error('[MODELS] Models endpoint error:', err);
+    req.logger.error('Models endpoint error', err, {
+      endpoint: '/api/models',
+    });
     // Return fallback models even on error
     try {
       const { getGeminiModels, getGroqModels } = await import('./lib/modelFetcher.js');
       const geminiModels = await getGeminiModels();
       const groqModels = await getGroqModels();
       const allModels = [...geminiModels, ...groqModels];
-      console.log(`[MODELS] Fallback: returning ${allModels.length} models (${geminiModels.length} Gemini, ${groqModels.length} Groq)`);
+      req.logger.warn('Fallback: returning models', {
+        modelCount: allModels.length,
+        geminiCount: geminiModels.length,
+        groqCount: groqModels.length,
+      });
       res.json({ models: allModels });
     } catch (fallbackErr) {
-      console.error('[MODELS] Fallback also failed:', fallbackErr);
+      req.logger.error('Fallback also failed', fallbackErr);
       res.status(500).json({
         error: 'Failed to fetch models',
         details: err.message,
@@ -249,39 +210,31 @@ app.get('/api/models', async (req, res) => {
 });
 
 /**
- * POST /api/agent (or / in Vercel)
+ * POST /api/v1/agent
  *
  * Main agent endpoint that routes to appropriate specialized agent
+ * Z1-level function: handles HTTP routing and validation
  * Expects: { userInput, sessionId, model?, campaignId?, characterIds? }
  * Returns: { narration, choices, session, steps }
  */
-app.post(agentPath, async (req, res) => {
-  // #region agent log
-  console.log('[DEBUG] server/server.js: /api/agent route matched', {
+app.post(agentV1Path, validateAgentRequest, async (req, res) => {
+  req.logger.debug('/api/agent route matched', {
     method: req.method,
     path: req.path,
     url: req.url,
     agentPath,
     hasBody: !!req.body,
-    hypothesisId: 'A',
   });
-  // #endregion
+  
   try {
-    const { userInput, sessionId, model, campaignId, characterIds } = req.body || {};
-    // #region agent log
-    console.log('[DEBUG] server/server.js: request body parsed', {
+    const { userInput, sessionId, model, campaignId, characterIds } = req.body;
+    req.logger.debug('request body parsed', {
       hasUserInput: !!userInput,
       hasSessionId: !!sessionId,
       hasModel: !!model,
-      hypothesisId: 'A',
     });
-    // #endregion
 
-    if (typeof userInput !== 'string' || userInput.trim().length === 0) {
-      return res.status(400).json({ error: 'Invalid userInput' });
-    }
-
-    // Validate and normalize model name
+    // Z2: Validate and normalize model name (delegated to modelValidator)
     let validatedModel = model || DEFAULT_MODEL;
     try {
       const { validateModelName, normalizeModelName } = await import('./lib/modelValidator.js');
@@ -292,7 +245,7 @@ app.post(agentPath, async (req, res) => {
       try {
         availableModels = await getAllModels();
       } catch (err) {
-        console.warn('[AGENT] Could not fetch available models for validation:', err.message);
+        req.logger.warn('Could not fetch available models for validation', { error: err.message });
       }
 
       const validation = validateModelName(validatedModel, availableModels);
@@ -302,7 +255,7 @@ app.post(agentPath, async (req, res) => {
         if (normalized && normalized !== validatedModel) {
           const revalidation = validateModelName(normalized, availableModels);
           if (revalidation.valid) {
-            console.log(`[AGENT] Model name normalized: "${validatedModel}" -> "${normalized}"`);
+            req.logger.debug(`Model name normalized: "${validatedModel}" -> "${normalized}"`);
             validatedModel = normalized;
           } else {
             return res.status(400).json({
@@ -327,104 +280,29 @@ app.post(agentPath, async (req, res) => {
         }
       } else if (validation.normalized && validation.normalized !== validatedModel) {
         validatedModel = validation.normalized;
-        console.log(`[AGENT] Model name normalized: "${model}" -> "${validatedModel}"`);
+        req.logger.debug(`Model name normalized: "${model}" -> "${validatedModel}"`);
       }
     } catch (validationError) {
-      console.warn('[AGENT] Model validation error (continuing with original model):', validationError.message);
+      req.logger.warn('Model validation error (continuing with original model)', { error: validationError.message });
       // Continue with original model if validation fails
     }
 
-    // Load or create session
-    let session = null;
-    if (sessionId) {
-      session = await loadSession(sessionId);
-    }
-
-    if (!session) {
-      session = await createSession(campaignId || null, characterIds || []);
-    }
-
-    // Handle special commands before routing
-    const normalizedInput = userInput.trim().toLowerCase();
-    if (normalizedInput === '/recap' || normalizedInput.startsWith('/recap')) {
-      // Generate recap from session history
-      try {
-        const recap = await generateRecap(session, validatedModel);
-        return res.json({
-          intent: 'recap',
-          narration: recap,
-          choices: [],
-          session: session,
-          sessionId: session.session.session_id,
-          steps: [],
-          customPokemon: null,
-        });
-      } catch (error) {
-        console.error('Recap generation error:', error);
-        // Fallback to simple recap
-        const simpleRecap = generateSimpleRecap(session);
-        return res.json({
-          intent: 'recap',
-          narration: simpleRecap,
-          choices: [],
-          session: session,
-          sessionId: session.session.session_id,
-          steps: [],
-          customPokemon: null,
-        });
-      }
-    }
-
-    // Route intent
-    const intent = await routeIntent(userInput, session, model || DEFAULT_MODEL);
-
-    // Execute appropriate agent
-    let result;
-    switch (intent) {
-      case 'narration':
-        result = await runDMAgent(userInput, session, model || DEFAULT_MODEL);
-        break;
-      case 'roll':
-        result = await runRulesAgent(userInput, session, model || DEFAULT_MODEL);
-        break;
-      case 'state':
-        result = await queryStateAgent(userInput, session, model || DEFAULT_MODEL);
-        break;
-      case 'lore':
-        result = await fetchLore(userInput, session, model || DEFAULT_MODEL);
-        break;
-      case 'design':
-        result = await createCustomPokemonAgent(userInput, session, model || DEFAULT_MODEL);
-        break;
-      default:
-        // Fallback to DM agent
-        result = await runDMAgent(userInput, session, model || DEFAULT_MODEL);
-    }
-
-    // Save updated session if state was modified
-    if (result.updatedSession) {
-      await saveSession(session.session.session_id, result.updatedSession);
-      session = result.updatedSession;
-    }
-    
-    // If custom Pokémon was created, reload to get updated custom_dex
-    // (createCustomPokemon tool saves the session, so reload will get latest)
-    if (result.customPokemon) {
-      session = await loadSession(session.session.session_id);
-    }
-
-    // Return response
-    res.json({
-      intent,
-      narration: result.narration || result.result || result.data || result.explanation || '',
-      choices: result.choices || [],
-      session: session,
-      sessionId: session.session.session_id,
-      steps: result.steps || [],
-      customPokemon: result.customPokemon || null,
+    // Z2: Orchestrate agent execution (delegated to orchestrator service)
+    const { orchestrateAgentExecution } = await import('./services/agentOrchestrator.js');
+    const result = await orchestrateAgentExecution({
+      userInput,
+      sessionId,
+      campaignId,
+      characterIds,
+      model: validatedModel,
     });
+
+    // Z1: Return response
+    res.json(result);
   } catch (err) {
-    console.error('Agent endpoint error:', err);
+    req.logger.error('Agent endpoint error', err, {
+      endpoint: '/api/agent',
+    });
     
     // Check for rate limit errors and provide user-friendly message
     const { isRateLimitError, isModelNotFoundError } = await import('./lib/retryUtils.js');
@@ -471,7 +349,7 @@ app.post(agentPath, async (req, res) => {
  * 
  * Note: In Vercel, when served from api/import.js, the path is preserved as /api/import
  */
-app.post('/api/import', async (req, res) => {
+app.post(`${API_V1}/import`, async (req, res) => {
   try {
     const {
       session_data,
@@ -499,7 +377,7 @@ app.post('/api/import', async (req, res) => {
     
     if (isLegacy) {
       // Migrate legacy format to schema-compliant format
-      console.log('[IMPORT] Detected legacy session format, migrating...');
+      req.logger.info('Detected legacy session format, migrating');
       warnings.push('Legacy session format detected and automatically migrated to schema-compliant format');
       newSession = migrateExampleToSchema(session_data);
       migrated = true;
@@ -578,7 +456,9 @@ app.post('/api/import', async (req, res) => {
       });
     }
   } catch (err) {
-    console.error('Import endpoint error:', err);
+    req.logger.error('Import endpoint error', err, {
+      endpoint: '/api/import',
+    });
     res.status(500).json({
       error: 'Import error',
       details: err.message,
@@ -603,18 +483,205 @@ app.post(chatPath, async (req, res) => {
   });
 });
 
+/**
+ * Campaign Management Endpoints (v1)
+ */
+
+/**
+ * POST /api/v1/campaigns
+ * Create a new campaign
+ * Expects: { region?, locations?, factions?, recurring_npcs?, world_facts? }
+ * Returns: { campaign_id, campaign }
+ */
+app.post(`${API_V1}/campaigns`, async (req, res) => {
+  try {
+    const {
+      createCampaign,
+    } = await import('./services/campaignService.js');
+    
+    const campaign = await createCampaign(req.body || {});
+    
+    res.status(201).json({
+      campaign_id: campaign.campaign_id,
+      campaign: campaign,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+    } catch (error) {
+      req.logger.error('Campaign creation error', error, {
+        endpoint: '/api/campaigns',
+      });
+    res.status(500).json({
+      error: 'Campaign creation failed',
+      details: error.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * GET /api/campaigns
+ * List all campaigns
+ * Returns: { campaigns: Array<campaign> }
+ */
+app.get('/api/campaigns', async (req, res) => {
+  try {
+    const {
+      listCampaigns,
+    } = await import('./services/campaignService.js');
+    
+    const campaigns = await listCampaigns();
+    
+    res.json({
+      campaigns: campaigns,
+      count: campaigns.length,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Campaign listing error:', error);
+    res.status(500).json({
+      error: 'Campaign listing failed',
+      details: error.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * GET /api/v1/campaigns/:id
+ * Get campaign by ID
+ * Returns: { campaign }
+ */
+app.get(`${API_V1}/campaigns/:id`, async (req, res) => {
+  try {
+    const {
+      getCampaign,
+    } = await import('./services/campaignService.js');
+    
+    const campaignId = req.params.id;
+    const campaign = await getCampaign(campaignId);
+    
+    if (!campaign) {
+      return res.status(404).json({
+        error: 'Campaign not found',
+        campaign_id: campaignId,
+        requestId: req.requestId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
+    res.json({
+      campaign: campaign,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    req.logger.error('Campaign retrieval error', error, {
+      endpoint: `/api/campaigns/${req.params.id}`,
+    });
+    res.status(500).json({
+      error: 'Campaign retrieval failed',
+      details: error.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * PUT /api/campaigns/:id
+ * Update campaign
+ * Expects: { region?, locations?, factions?, recurring_npcs?, world_facts? }
+ * Returns: { campaign }
+ */
+app.put('/api/campaigns/:id', async (req, res) => {
+  try {
+    const {
+      updateCampaign,
+    } = await import('./services/campaignService.js');
+    
+    const campaignId = req.params.id;
+    const campaign = await updateCampaign(campaignId, req.body || {});
+    
+    res.json({
+      campaign: campaign,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    if (error.message.includes('not found')) {
+      return res.status(404).json({
+        error: 'Campaign not found',
+        campaign_id: req.params.id,
+        requestId: req.requestId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
+    console.error('Campaign update error:', error);
+    res.status(500).json({
+      error: 'Campaign update failed',
+      details: error.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * DELETE /api/v1/campaigns/:id
+ * Delete campaign and all associated sessions
+ * Returns: { success: true }
+ */
+app.delete(`${API_V1}/campaigns/:id`, async (req, res) => {
+  try {
+    const {
+      deleteCampaign,
+    } = await import('./services/campaignService.js');
+    
+    const campaignId = req.params.id;
+    const deleted = await deleteCampaign(campaignId);
+    
+    if (!deleted) {
+      return res.status(404).json({
+        error: 'Campaign not found',
+        campaign_id: campaignId,
+        requestId: req.requestId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
+    res.json({
+      success: true,
+      campaign_id: campaignId,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    req.logger.error('Campaign deletion error', error, {
+      endpoint: `/api/campaigns/${req.params.id}`,
+    });
+    res.status(500).json({
+      error: 'Campaign deletion failed',
+      details: error.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // Catch-all for undefined routes - return JSON (must be after all routes)
 // Catch-all for unmatched routes (for debugging)
 app.use((req, res) => {
-  // #region agent log
-  console.log('[DEBUG] server/server.js: unmatched route', {
+  req.logger.warn('Unmatched route', {
     method: req.method,
     url: req.url,
     path: req.path,
     originalUrl: req.originalUrl,
-    hypothesisId: 'A',
   });
-  // #endregion
   res.status(404).json({ 
     error: 'Not found', 
     path: req.path,
@@ -626,20 +693,7 @@ app.use((req, res) => {
 });
 
 // Error handler middleware - must be last
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  if (!res.headersSent) {
-    res.status(500).json({ 
-      error: 'Server error', 
-      details: err.message,
-      requestId: req.requestId || crypto.randomUUID(), // Use middleware ID or generate fallback
-      timestamp: new Date().toISOString(),
-      endpoint: req.path,
-      method: req.method,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
-  }
-});
+app.use(errorHandler);
 
 // Export app for Vercel serverless functions
 export default app;

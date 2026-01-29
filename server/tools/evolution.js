@@ -24,10 +24,10 @@ export const fetchEvolutionChain = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/evolution-chain/${id}/`);
-      if (!response.ok) {
-        throw new Error(`Evolution chain not found: ${id}`);
-      }
+      const response = await fetchPokeAPI(
+        `https://pokeapi.co/api/v2/evolution-chain/${id}/`,
+        'Evolution chain'
+      );
       const data = await response.json();
 
       // Simplify evolution chain structure

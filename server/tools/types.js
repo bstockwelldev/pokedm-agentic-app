@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { getCachedCanonData, setCachedCanonData } from '../storage/canonCache.js';
+import { fetchPokeAPI } from './pokeapiHelper.js';
 
 /**
  * Fetch type effectiveness data from PokeAPI with caching
@@ -22,10 +23,10 @@ export const fetchType = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/type/${idOrName.toLowerCase()}/`);
-      if (!response.ok) {
-        throw new Error(`Type not found: ${idOrName}`);
-      }
+      const response = await fetchPokeAPI(
+        `https://pokeapi.co/api/v2/type/${idOrName.toLowerCase()}/`,
+        'Type'
+      );
       const data = await response.json();
 
       // Simplify damage relations for kid-friendly play

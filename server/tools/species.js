@@ -22,10 +22,10 @@ export const fetchPokemonSpecies = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${idOrName.toLowerCase()}/`);
-      if (!response.ok) {
-        throw new Error(`Pokémon species not found: ${idOrName}`);
-      }
+      const response = await fetchPokeAPI(
+        `https://pokeapi.co/api/v2/pokemon-species/${idOrName.toLowerCase()}/`,
+        'Pokémon species'
+      );
       const data = await response.json();
 
       // Check generation

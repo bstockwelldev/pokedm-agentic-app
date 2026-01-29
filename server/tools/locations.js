@@ -23,10 +23,10 @@ export const fetchLocation = tool({
     }
 
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/location/${idOrName.toLowerCase()}/`);
-      if (!response.ok) {
-        throw new Error(`Location not found: ${idOrName}`);
-      }
+      const response = await fetchPokeAPI(
+        `https://pokeapi.co/api/v2/location/${idOrName.toLowerCase()}/`,
+        'Location'
+      );
       const data = await response.json();
 
       // Simplify for reference only
