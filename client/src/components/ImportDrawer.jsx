@@ -10,7 +10,6 @@ import {
   convertRawSessionToExportFormat,
   isRawSessionFormat,
 } from '../lib/importSession';
-import MarkdownText from './MarkdownText';
 
 /**
  * ImportDrawer Component
@@ -756,12 +755,10 @@ export default function ImportDrawer({
           {/* Error Message */}
           {importError && (
             <div
-              className="p-3 rounded-md bg-red-900/20 border border-red-800/30 text-sm"
+              className="p-3 rounded-md bg-red-900/20 border border-red-800/30 text-sm text-red-300"
               role="alert"
             >
-              <MarkdownText variant="error">
-                {importError}
-              </MarkdownText>
+              {importError}
             </div>
           )}
         </div>

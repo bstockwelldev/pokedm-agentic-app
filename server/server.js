@@ -204,22 +204,19 @@ app.get(`${API_V1}/models`, handleGetModels);
 app.get('/api/models', handleGetModels);
 
 /**
- * POST /api/v1/agent
- *
- * Main agent endpoint that routes to appropriate specialized agent
- * Z1-level function: handles HTTP routing and validation
+ * POST /api/v1/agent and POST /api/agent (legacy)
+ * Main agent endpoint. Legacy /api/agent is used by the client and Vercel api/agent.js.
  * Expects: { userInput, sessionId, model?, campaignId?, characterIds? }
  * Returns: { narration, choices, session, steps }
  */
-app.post(agentV1Path, validateAgentRequest, async (req, res) => {
-  req.logger.debug('/api/agent route matched', {
+async function handlePostAgent(req, res) {
+  req.logger.debug('Agent route matched', {
     method: req.method,
     path: req.path,
     url: req.url,
-    agentPath,
     hasBody: !!req.body,
   });
-  
+
   try {
     const { userInput, sessionId, model, campaignId, characterIds } = req.body;
     req.logger.debug('request body parsed', {
@@ -228,13 +225,11 @@ app.post(agentV1Path, validateAgentRequest, async (req, res) => {
       hasModel: !!model,
     });
 
-    // Z2: Validate and normalize model name (delegated to modelValidator)
     let validatedModel = model || DEFAULT_MODEL;
     try {
       const { validateModelName, normalizeModelName } = await import('./lib/modelValidator.js');
       const { getAllModels } = await import('./lib/modelFetcher.js');
-      
-      // Try to get available models for validation
+
       let availableModels = [];
       try {
         availableModels = await getAllModels();
@@ -244,7 +239,6 @@ app.post(agentV1Path, validateAgentRequest, async (req, res) => {
 
       const validation = validateModelName(validatedModel, availableModels);
       if (!validation.valid) {
-        // Try to normalize and validate again
         const normalized = normalizeModelName(validatedModel);
         if (normalized && normalized !== validatedModel) {
           const revalidation = validateModelName(normalized, availableModels);
@@ -278,10 +272,8 @@ app.post(agentV1Path, validateAgentRequest, async (req, res) => {
       }
     } catch (validationError) {
       req.logger.warn('Model validation error (continuing with original model)', { error: validationError.message });
-      // Continue with original model if validation fails
     }
 
-    // Z2: Orchestrate agent execution (delegated to orchestrator service)
     const { orchestrateAgentExecution } = await import('./services/agentOrchestrator.js');
     const result = await orchestrateAgentExecution({
       userInput,
@@ -291,20 +283,15 @@ app.post(agentV1Path, validateAgentRequest, async (req, res) => {
       model: validatedModel,
     });
 
-    // Z1: Return response
     res.json(result);
   } catch (err) {
-    req.logger.error('Agent endpoint error', err, {
-      endpoint: '/api/agent',
-    });
-    
-    // Check for rate limit errors and provide user-friendly message
+    req.logger.error('Agent endpoint error', err, { endpoint: req.path || '/api/agent' });
+
     const { isRateLimitError, isModelNotFoundError } = await import('./lib/retryUtils.js');
     const rateLimitInfo = isRateLimitError(err);
     const isModelError = isModelNotFoundError(err);
 
-    let errorMessage = err.message;
-    let userFriendlyMessage = errorMessage;
+    let userFriendlyMessage = err.message;
     let errorType = 'unknown';
 
     if (rateLimitInfo) {
@@ -318,33 +305,34 @@ app.post(agentV1Path, validateAgentRequest, async (req, res) => {
       userFriendlyMessage = `Model not found or not supported. Please check the model name and try again.`;
     }
 
-    res.status(500).json({ 
-      error: 'Agent error', 
+    res.status(500).json({
+      error: 'Agent error',
       errorType,
-      details: errorMessage,
+      details: err.message,
       userMessage: userFriendlyMessage,
       requestId: req.requestId,
       timestamp: new Date().toISOString(),
       endpoint: req.path,
       method: req.method,
       ...(rateLimitInfo && { retryAfter: rateLimitInfo.retryAfter }),
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
   }
-});
+}
+
+app.post(agentV1Path, validateAgentRequest, handlePostAgent);
+app.post(agentPath, validateAgentRequest, handlePostAgent);
 
 /**
- * POST /api/import
- * 
- * Import session data from export file
+ * POST /api/v1/import and POST /api/import (legacy)
+ * Import session data. Legacy /api/import is used by the client and Vercel api/import.js.
  * Expects: { session_data?, messages?, characters?, campaign?, custom_pokemon?, continuity?, options }
- * Supports automatic migration from legacy/example format
  * Returns: { sessionId, session, imported_components, warnings, migrated? }
- * 
- * Note: In Vercel, when served from api/import.js, the path is preserved as /api/import
  */
-app.post(`${API_V1}/import`, async (req, res) => {
+async function handlePostImport(req, res) {
   try {
+    const { createSession, saveSession } = await import('./storage/sessionStore.js');
+
     const {
       session_data,
       messages,
@@ -359,35 +347,29 @@ app.post(`${API_V1}/import`, async (req, res) => {
     const warnings = [];
     let migrated = false;
 
-    // Check if this is a legacy format session that needs migration
     const { isLegacyFormat, migrateExampleToSchema } = await import('./lib/migrateSession.js');
     const isLegacy = session_data && isLegacyFormat(session_data);
 
-    // Extract campaignId and characterIds before conditional logic
     const campaignId = session_data?.campaign_id || campaign?.campaign_id || null;
     const characterIds = session_data?.character_ids || characters?.map((c) => c.character_id).filter(Boolean) || [];
-    
+
     let newSession;
-    
+
     if (isLegacy) {
-      // Migrate legacy format to schema-compliant format
       req.logger.info('Detected legacy session format, migrating');
       warnings.push('Legacy session format detected and automatically migrated to schema-compliant format');
       newSession = migrateExampleToSchema(session_data);
       migrated = true;
     } else {
-      // Standard import flow
       newSession = await createSession(campaignId, characterIds);
     }
 
-    // Merge imported components (applies to both legacy and standard imports)
     if (importComponents.includes('session') && session_data) {
-      // Merge session data, preserving new session_id
       const originalSessionId = newSession.session.session_id;
       newSession.session = {
         ...newSession.session,
         ...session_data,
-        session_id: originalSessionId, // Always use new session ID
+        session_id: originalSessionId,
       };
     }
 
@@ -420,7 +402,6 @@ app.post(`${API_V1}/import`, async (req, res) => {
       };
     }
 
-    // Validate merged session
     try {
       const validated = PokemonSessionSchema.parse(newSession);
       await saveSession(validated.session.session_id, validated);
@@ -433,7 +414,6 @@ app.post(`${API_V1}/import`, async (req, res) => {
         migrated: migrated || undefined,
       };
 
-      // Include messages separately if imported (not part of session schema)
       if (importComponents.includes('messages') && messages && Array.isArray(messages)) {
         response.messages = messages;
       }
@@ -450,9 +430,7 @@ app.post(`${API_V1}/import`, async (req, res) => {
       });
     }
   } catch (err) {
-    req.logger.error('Import endpoint error', err, {
-      endpoint: '/api/import',
-    });
+    req.logger.error('Import endpoint error', err, { endpoint: req.path || '/api/import' });
     res.status(500).json({
       error: 'Import error',
       details: err.message,
@@ -463,7 +441,10 @@ app.post(`${API_V1}/import`, async (req, res) => {
       stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
   }
-});
+}
+
+app.post(`${API_V1}/import`, handlePostImport);
+app.post('/api/import', handlePostImport);
 
 // Keep /api/chat for backward compatibility (optional)
 app.post(chatPath, async (req, res) => {
