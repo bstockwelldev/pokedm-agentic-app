@@ -146,31 +146,25 @@ const chatPath = '/api/chat';
 const chatV1Path = '/api/v1/chat';
 
 /**
- * GET /api/v1/models
- * 
- * Fetch available models from all providers
+ * GET /api/v1/models and GET /api/models (legacy)
+ * Fetch available models from all providers.
  * Returns: { models: Array<{id, name, provider}> }
- * 
- * Note: Legacy /api/models endpoint maintained for backward compatibility
+ * Legacy /api/models is used by Vercel serverless (api/models.js) and the client.
  */
-app.get(`${API_V1}/models`, async (req, res) => {
-  req.logger.debug('/api/models route matched', {
+async function handleGetModels(req, res) {
+  req.logger.debug('Models route matched', {
     method: req.method,
     path: req.path,
     url: req.url,
   });
-  
+
   try {
     const { getAllModels } = await import('./lib/modelFetcher.js');
-    req.logger.debug('modelFetcher imported', {
-      hasGetAllModels: !!getAllModels,
-    });
-    
+    req.logger.debug('modelFetcher imported', { hasGetAllModels: !!getAllModels });
+
     const models = await getAllModels();
-    req.logger.debug('models fetched', {
-      modelCount: models.length,
-    });
-    
+    req.logger.debug('models fetched', { modelCount: models.length });
+
     const groqCount = models.filter(m => m.provider === 'groq').length;
     const geminiCount = models.filter(m => m.provider === 'google').length;
     req.logger.info(`API endpoint returning ${models.length} models (${geminiCount} Gemini, ${groqCount} Groq)`, {
@@ -179,13 +173,10 @@ app.get(`${API_V1}/models`, async (req, res) => {
       groqCount,
       modelIds: models.map(m => m.id),
     });
-    
+
     res.json({ models });
   } catch (err) {
-    req.logger.error('Models endpoint error', err, {
-      endpoint: '/api/models',
-    });
-    // Return fallback models even on error
+    req.logger.error('Models endpoint error', err, { endpoint: req.path || '/api/models' });
     try {
       const { getGeminiModels, getGroqModels } = await import('./lib/modelFetcher.js');
       const geminiModels = await getGeminiModels();
@@ -207,7 +198,10 @@ app.get(`${API_V1}/models`, async (req, res) => {
       });
     }
   }
-});
+}
+
+app.get(`${API_V1}/models`, handleGetModels);
+app.get('/api/models', handleGetModels);
 
 /**
  * POST /api/v1/agent

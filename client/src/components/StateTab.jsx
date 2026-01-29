@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { cn } from '../lib/utils';
 import MarkdownText from './MarkdownText';
 import JsonViewer from './JsonViewer';
-import { PanelSkeleton } from './Skeleton';
 
 /**
  * StateTab - Enhanced session state display with structured sections
@@ -41,7 +40,19 @@ export default function StateTab({ session }) {
   }, [session, searchQuery]);
 
   if (!session) {
-    return <PanelSkeleton />;
+    return (
+      <div
+        className={cn(
+          'flex flex-col items-center justify-center gap-3 py-8 px-4 text-center',
+          'text-muted-foreground text-sm'
+        )}
+        role="status"
+        aria-live="polite"
+      >
+        <p>Session state will appear after you send a message.</p>
+        <p className="text-xs">Send your first prompt in the composer to start your adventure.</p>
+      </div>
+    );
   }
 
   return (
