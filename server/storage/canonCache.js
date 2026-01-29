@@ -5,9 +5,11 @@
 
 import { getDefaultAdapter } from './adapters/index.js';
 
-// Import adapters to register them
+// Import adapters to register them (postgres only when STORAGE_PROVIDER is postgres to avoid loading pg on Vercel/file)
 import './adapters/file.js';
-import './adapters/postgres.js';
+if (process.env.STORAGE_PROVIDER === 'postgres') {
+  await import('./adapters/postgres.js');
+}
 
 // Get the default adapter instance
 const adapter = getDefaultAdapter();

@@ -41,7 +41,7 @@ export default function App() {
     // Generate or load session ID from localStorage
     let savedSessionId = localStorage.getItem('pokedm_session_id');
     if (!savedSessionId) {
-      savedSessionId = `session_${Date.now()}`;
+      savedSessionId = crypto.randomUUID?.() ?? `session_${Date.now()}`;
       localStorage.setItem('pokedm_session_id', savedSessionId);
     }
     setSessionId(savedSessionId);
