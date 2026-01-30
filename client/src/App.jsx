@@ -12,6 +12,44 @@ import { renderMessage } from './lib/messageMapper';
 import { cn } from './lib/utils';
 import { filterValidModels, normalizeModelName } from './lib/modelValidator';
 
+function normalizeErrorText(value) {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item;
+        }
+        if (item && typeof item.message === 'string') {
+          return item.message;
+        }
+        try {
+          return JSON.stringify(item);
+        } catch {
+          return String(item);
+        }
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+  if (value && typeof value === 'object') {
+    if (typeof value.message === 'string') {
+      return value.message;
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  if (value == null) {
+    return '';
+  }
+  return String(value);
+}
+
 /**
  * PokeDM Chat Application
  * Interacts with the multi-agent backend for Pokémon TTRPG adventures
@@ -166,27 +204,32 @@ export default function App() {
         const requestId = response.headers.get('X-Request-ID') || errorData.requestId;
         
         // Enhanced error handling for rate limiting and model errors
+        const errorText = normalizeErrorText(errorData.error);
+        const detailsText = normalizeErrorText(errorData.details);
+        const userMessageText = normalizeErrorText(errorData.userMessage);
+        const errorTextLower = errorText.toLowerCase();
+        const detailsTextLower = detailsText.toLowerCase();
         const isRateLimit = response.status === 429 || 
                            errorData.errorType === 'rate_limit' ||
-                           errorData.error?.toLowerCase().includes('rate limit') ||
-                           errorData.details?.toLowerCase().includes('quota exceeded');
+                           errorTextLower.includes('rate limit') ||
+                           detailsTextLower.includes('quota exceeded');
         const isModelError = errorData.errorType === 'model_not_found' ||
-                            errorData.error?.toLowerCase().includes('model') && errorData.error?.toLowerCase().includes('not found');
+                            errorTextLower.includes('model') && errorTextLower.includes('not found');
         
         // Use user-friendly message if available
-        const userMessage = errorData.userMessage || errorData.error || errorData.details || `HTTP ${response.status}`;
+        const userMessage = userMessageText || errorText || detailsText || `HTTP ${response.status}`;
         
         setError({
           message: isRateLimit 
-            ? (errorData.userMessage || 'Rate limit exceeded - Please try again in a moment or switch to a different model')
+            ? (userMessageText || errorText || 'Rate limit exceeded - Please try again in a moment or switch to a different model')
             : isModelError
-            ? (errorData.userMessage || 'Invalid model name - Please select a different model')
+            ? (userMessageText || errorText || 'Invalid model name - Please select a different model')
             : userMessage,
           details: isRateLimit
-            ? (errorData.details || 'The AI provider has temporarily limited requests. Try switching to a different model or wait a few moments.')
+            ? (detailsText || 'The AI provider has temporarily limited requests. Try switching to a different model or wait a few moments.')
             : isModelError
-            ? (errorData.details || `Model "${model}" is not available. Please select a different model from the dropdown.`)
-            : errorData.details,
+            ? (detailsText || `Model "${model}" is not available. Please select a different model from the dropdown.`)
+            : (detailsText || undefined),
           requestId: requestId,
           timestamp: errorData.timestamp || new Date().toISOString(),
           endpoint: errorData.endpoint || '/api/agent',
@@ -223,9 +266,11 @@ export default function App() {
       if (data.error) {
         // Extract request ID from response headers or error data
         const requestId = response.headers.get('X-Request-ID') || data.requestId;
+        const errorText = normalizeErrorText(data.error);
+        const detailsText = normalizeErrorText(data.details);
         setError({
-          message: data.error,
-          details: data.details,
+          message: errorText || 'An unexpected error occurred',
+          details: detailsText || undefined,
           requestId: requestId,
           timestamp: data.timestamp || new Date().toISOString(),
           endpoint: data.endpoint || '/api/agent',
