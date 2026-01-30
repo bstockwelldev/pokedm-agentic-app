@@ -279,7 +279,7 @@ export default function StateTab({ session }) {
         </>
       ) : (
         <div className="text-muted italic text-sm">
-          No results found for "{searchQuery}"
+          No results found for {searchQuery}
         </div>
       )}
     </div>

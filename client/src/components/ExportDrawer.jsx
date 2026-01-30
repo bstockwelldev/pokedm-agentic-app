@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '../lib/utils';
 import { exportSessionData, getAvailableComponents } from '../lib/exportSession';
+import MarkdownText from './MarkdownText';
 
 /**
  * ExportDrawer Component

@@ -32,7 +32,7 @@ export default function ChatTimeline({
     >
       {messages.length === 0 && !loading && (
         <div className="rounded-lg border border-border/60 bg-background/50 p-4 text-sm text-muted">
-          Welcome to PokeDM! Start your adventure by describing what you'd like to do.
+          Welcome to PokeDM! Start your adventure by describing what you would like to do.
         </div>
       )}
       
