@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { cn } from '../lib/utils';
-import MarkdownText from './MarkdownText';
 
 /**
  * ErrorBanner Component
@@ -61,13 +60,13 @@ export default function ErrorBanner({
           <div className="font-semibold mb-2 text-base">
             Error{statusCode ? ` (${statusCode})` : ''}
           </div>
-          <MarkdownText variant="error" className="mb-2 text-sm">
+          <p className="mb-2 text-sm whitespace-pre-wrap break-words">
             {error}
-          </MarkdownText>
+          </p>
           {details && (
-            <MarkdownText variant="error" className="text-xs opacity-90 mb-2">
+            <pre className="text-xs opacity-90 mb-2 whitespace-pre-wrap break-words font-sans">
               {details}
-            </MarkdownText>
+            </pre>
           )}
           {retryAfter && (
             <div className="text-xs opacity-90 mb-2 font-medium">
