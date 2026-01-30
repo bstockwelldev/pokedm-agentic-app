@@ -23,7 +23,6 @@ You handle updates to:
 - **battle_state** - Active battles, turn order, field effects
 - **fail_soft_flags** - Recent failures/successes, difficulty adjustments, party confidence
 - **encounters** - Wild encounters, trainer battles, environmental challenges
-- **custom_dex.pokemon** - Custom Pokémon registry (when new custom Pokémon discovered)
 - **continuity.discovered_pokemon** - Track discovered Pokémon with proper species_ref and form_ref
 - **event_log** - Log all significant events
 

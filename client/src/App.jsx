@@ -8,6 +8,7 @@ import TopBar from './components/TopBar';
 import ChatTimeline from './components/ChatTimeline';
 import Composer from './components/Composer';
 import RightPanel from './components/RightPanel';
+import SessionInfoCard from './components/SessionInfoCard';
 import { renderMessage } from './lib/messageMapper';
 import { cn } from './lib/utils';
 import { filterValidModels, normalizeModelName } from './lib/modelValidator';
@@ -542,6 +543,7 @@ export default function App() {
       <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[2fr_1fr] overflow-hidden min-h-0">
         {/* Chat Area */}
         <div className="flex flex-col overflow-hidden min-h-0">
+          <SessionInfoCard session={session} sessionId={sessionId} />
           {/* Chat Timeline */}
           <div className="flex-1 overflow-hidden p-4 min-h-0">
             <ChatTimeline messages={messages} loading={loading}>

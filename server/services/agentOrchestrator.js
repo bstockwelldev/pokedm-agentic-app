@@ -54,6 +54,18 @@ export async function orchestrateAgentExecution({
       customPokemon: null,
     };
   }
+  if (normalizedInput === '/save' || normalizedInput.startsWith('/save')) {
+    await saveSession(session.session.session_id, session);
+    return {
+      intent: 'save',
+      narration: 'Session saved successfully.',
+      choices: [],
+      session: session,
+      sessionId: session.session.session_id,
+      steps: [],
+      customPokemon: null,
+    };
+  }
 
   // Z2: Route intent
   const intent = await routeIntent(userInput, session, model);

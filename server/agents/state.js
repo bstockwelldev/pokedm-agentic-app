@@ -96,10 +96,6 @@ const StateUpdateSchema = z.object({
       status: z.enum(['open', 'progressed', 'resolved']),
     })).optional(),
   }).optional(),
-  custom_dex: z.object({
-    pokemon: z.record(z.any()).optional(),
-  }).optional(),
-  characters: z.array(z.any()).optional(),
 }).describe('Partial state updates following the session schema');
 
 /**
@@ -191,17 +187,8 @@ function mergeStateUpdates(session, updates) {
   if (updates.session) {
     merged.session = deepMerge(merged.session, updates.session);
   }
-  if (updates.custom_dex) {
-    merged.custom_dex = deepMerge(merged.custom_dex, updates.custom_dex);
-  }
   if (updates.continuity) {
     merged.continuity = deepMerge(merged.continuity, updates.continuity);
-  }
-  if (updates.campaign) {
-    merged.campaign = deepMerge(merged.campaign, updates.campaign);
-  }
-  if (updates.characters) {
-    merged.characters = updates.characters; // Replace array
   }
 
   return merged;
