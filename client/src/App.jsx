@@ -12,6 +12,32 @@ import { renderMessage } from './lib/messageMapper';
 import { cn } from './lib/utils';
 import { filterValidModels, normalizeModelName } from './lib/modelValidator';
 
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUuid(value) {
+  return typeof value === 'string' && UUID_V4_REGEX.test(value);
+}
+
+function generateUuidV4() {
+  const cryptoObj = globalThis.crypto;
+  if (cryptoObj && typeof cryptoObj.randomUUID === 'function') {
+    return cryptoObj.randomUUID();
+  }
+  if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10xx
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0'));
+    return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const rand = Math.floor(Math.random() * 16);
+    const value = char === 'x' ? rand : (rand & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
 function normalizeErrorText(value) {
   if (typeof value === 'string') {
     return value;
@@ -78,8 +104,8 @@ export default function App() {
   useEffect(() => {
     // Generate or load session ID from localStorage
     let savedSessionId = localStorage.getItem('pokedm_session_id');
-    if (!savedSessionId) {
-      savedSessionId = crypto.randomUUID?.() ?? `session_${Date.now()}`;
+    if (!isValidUuid(savedSessionId)) {
+      savedSessionId = generateUuidV4();
       localStorage.setItem('pokedm_session_id', savedSessionId);
     }
     setSessionId(savedSessionId);
