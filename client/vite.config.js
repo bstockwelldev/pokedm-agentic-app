@@ -9,6 +9,10 @@ import react from '@vitejs/plugin-react';
 // Locally: uses 'localhost' (set VITE_API_TARGET=http://localhost:3001)
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+  },
   server: {
     host: '0.0.0.0', // Allow external connections (needed for Docker)
     port: 3000, // Match README and docker-compose port mapping

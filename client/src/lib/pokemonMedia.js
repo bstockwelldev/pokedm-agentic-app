@@ -33,6 +33,10 @@ function normalizeIdOrName(value) {
 export function parsePokemonRef(ref) {
   if (!ref || typeof ref !== 'string') return null;
   const parts = ref.split(':');
+  const prefix = parts.length > 1 ? parts[0] : null;
+  if (prefix === 'custom') {
+    return null;
+  }
   return normalizeIdOrName(parts[parts.length - 1]);
 }
 
