@@ -49,10 +49,10 @@ export default function ErrorBanner({
       aria-atomic="true"
       onKeyDown={handleKeyDown}
       className={cn(
-        'bg-red-600 text-white',
-        'p-4 rounded-lg mb-4',
-        'border border-red-800',
-        'relative'
+        'bg-red-500/10 text-red-100',
+        'p-4 rounded-xl mb-4',
+        'border border-red-500/40',
+        'relative shadow-sm backdrop-blur'
       )}
     >
       <div className="flex justify-between items-start gap-4">
@@ -90,7 +90,7 @@ export default function ErrorBanner({
             onClick={onDismiss}
             aria-label="Dismiss error"
             className={cn(
-              'bg-transparent border-none text-white',
+              'bg-transparent border-none text-red-100',
               'cursor-pointer text-2xl leading-none p-1',
               'opacity-80 hover:opacity-100 transition-opacity'
             )}
@@ -105,10 +105,10 @@ export default function ErrorBanner({
             onClick={onRetry}
             aria-label="Retry last request"
             className={cn(
-              'bg-white text-red-600 border-none',
-              'px-4 py-2 rounded',
+              'bg-red-500/20 text-red-100 border border-red-400/40',
+              'px-4 py-2 rounded-lg',
               'cursor-pointer font-medium text-sm',
-              'hover:bg-gray-100 transition-colors'
+              'hover:bg-red-500/30 transition-colors'
             )}
           >
             Retry
@@ -119,10 +119,10 @@ export default function ErrorBanner({
             onClick={onCopyDiagnostics}
             aria-label="View diagnostics"
             className={cn(
-              'bg-transparent text-white',
-              'border border-white px-4 py-2 rounded',
+              'bg-transparent text-red-100',
+              'border border-red-300/50 px-4 py-2 rounded-lg',
               'font-medium text-sm',
-              'hover:bg-white/10 transition-colors'
+              'hover:bg-red-500/20 transition-colors'
             )}
           >
             View Diagnostics

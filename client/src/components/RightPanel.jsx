@@ -43,8 +43,10 @@ export default function RightPanel({
       <aside
         aria-label="Session information panel"
         className={cn(
-          'border-l border-border',
-          'bg-background',
+          'border border-border/60',
+          'bg-background/70 backdrop-blur',
+          'shadow-[inset_1px_0_0_rgba(255,255,255,0.03)]',
+          'rounded-xl',
           'overflow-hidden',
           'hidden lg:flex lg:flex-col', // Hide on mobile, show on desktop
           className
@@ -53,7 +55,7 @@ export default function RightPanel({
         {...props}
       >
         {/* Tabs */}
-        <div className="flex border-b border-border" role="tablist">
+        <div className="flex border-b border-border/60 bg-background/60" role="tablist">
           {['state', 'tools', 'logs'].map((tab) => (
             <button
               key={tab}
@@ -65,8 +67,9 @@ export default function RightPanel({
               className={cn(
                 'px-4 py-2 text-sm font-medium',
                 'border-b-2 transition-colors',
+                'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
                 activeTab === tab
-                  ? 'border-brand text-foreground'
+                  ? 'border-brand text-foreground bg-background/60'
                   : 'border-transparent text-muted hover:text-foreground'
               )}
             >

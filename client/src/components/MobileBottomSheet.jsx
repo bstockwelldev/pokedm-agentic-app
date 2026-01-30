@@ -31,7 +31,7 @@ export default function MobileBottomSheet({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -40,8 +40,8 @@ export default function MobileBottomSheet({
       <div
         className={cn(
           'fixed inset-x-0 bottom-0 z-50',
-          'bg-background border-t border-border',
-          'rounded-t-lg shadow-lg',
+          'bg-background/90 border-t border-border/60',
+          'rounded-t-xl shadow-xl backdrop-blur',
           'max-h-[80vh]',
           'lg:hidden',
           'transform transition-transform duration-300 ease-out',
@@ -55,12 +55,12 @@ export default function MobileBottomSheet({
       >
         {/* Handle */}
         <div className="flex justify-center pt-2 pb-1">
-          <div className="w-12 h-1 bg-muted rounded-full" />
+          <div className="w-12 h-1 bg-muted/60 rounded-full" />
         </div>
 
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
             <h2 id="bottom-sheet-title" className="text-lg font-semibold text-foreground">
               {title}
             </h2>

@@ -17,9 +17,10 @@ export default function TopBar({
   return (
     <header
       className={cn(
-        'border-b border-border',
+        'border-b border-border/60',
         'px-4 py-3',
-        'bg-background',
+        'bg-background/75 backdrop-blur',
+        'shadow-sm',
         className
       )}
       role="banner"
@@ -37,7 +38,7 @@ export default function TopBar({
               aria-label="Import session"
               className={cn(
                 'p-2 rounded-md',
-                'bg-input border border-border',
+                'bg-background/60 border border-border/60',
                 'text-foreground',
                 'focus:outline-none focus:ring-2 focus:ring-ring',
                 'hover:bg-muted/20 transition-colors'
@@ -52,7 +53,7 @@ export default function TopBar({
               aria-label="Export session"
               className={cn(
                 'p-2 rounded-md',
-                'bg-brand text-background',
+                'bg-brand/90 text-background shadow-sm',
                 'focus:outline-none focus:ring-2 focus:ring-ring',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 'hover:opacity-90 transition-opacity'
@@ -74,7 +75,7 @@ export default function TopBar({
             onChange={(e) => onModelChange(e.target.value)}
             className={cn(
               'flex-1 px-2 py-1.5',
-              'bg-input border border-border rounded-md',
+              'bg-background/60 border border-border/60 rounded-md',
               'text-foreground text-xs',
               'focus:outline-none focus:ring-2 focus:ring-ring',
               'cursor-pointer',
@@ -108,7 +109,7 @@ export default function TopBar({
       {/* Desktop Layout */}
       <div className="hidden lg:flex items-center justify-between flex-wrap gap-4">
         <h1 id="app-title" className="text-xl font-bold text-foreground">
-          PokeDM - Pokémon TTRPG Adventure
+          PokeDM - Pokemon TTRPG Adventure
         </h1>
         
         <div className="flex items-center gap-4 flex-wrap">
@@ -124,7 +125,7 @@ export default function TopBar({
               onChange={(e) => onModelChange(e.target.value)}
               className={cn(
                 'px-3 py-1.5',
-                'bg-input border border-border rounded-md',
+                'bg-background/60 border border-border/60 rounded-md',
                 'text-foreground text-sm',
                 'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
                 'cursor-pointer',
@@ -163,7 +164,7 @@ export default function TopBar({
               aria-label="Import session"
               className={cn(
                 'px-3 py-1.5 rounded-md text-sm',
-                'bg-input border border-border',
+                'bg-background/60 border border-border/60',
                 'text-foreground',
                 'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
                 'hover:bg-muted/20 transition-colors'
@@ -178,7 +179,7 @@ export default function TopBar({
               aria-label="Export session"
               className={cn(
                 'px-3 py-1.5 rounded-md text-sm',
-                'bg-brand text-background font-medium',
+                'bg-brand/90 text-background font-medium shadow-sm',
                 'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 'hover:opacity-90 active:opacity-80 transition-opacity'

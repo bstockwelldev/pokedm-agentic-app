@@ -44,9 +44,10 @@ export default function Composer({
   return (
     <div
       className={cn(
-        'border-t border-border',
+        'border-t border-border/60',
         'p-4',
-        'bg-background',
+        'bg-background/75 backdrop-blur',
+        'shadow-[0_-12px_30px_-26px_rgba(0,0,0,0.9)]',
         'relative',
         className
       )}
@@ -58,8 +59,8 @@ export default function Composer({
           type="button"
           onClick={() => setShowQuickActions(!showQuickActions)}
           className={cn(
-            'px-2 py-1 text-xs rounded',
-            'bg-input border border-border',
+            'px-3 py-1.5 text-xs rounded-full',
+            'bg-background/60 border border-border/60',
             'text-muted hover:text-foreground',
             'transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
@@ -85,8 +86,8 @@ export default function Composer({
               onClick={() => handleQuickAction(action.command)}
               disabled={loading || disabled}
               className={cn(
-                'px-3 py-1.5 text-xs rounded-md',
-                'bg-input border border-border',
+                'px-3 py-1.5 text-xs rounded-full',
+                'bg-background/60 border border-border/60',
                 'text-foreground',
                 'hover:bg-muted/20 hover:border-brand/50',
                 'transition-colors',
@@ -120,7 +121,7 @@ export default function Composer({
         placeholder="Type your message or action here and press Enter to send"
         className={cn(
           'w-full mb-2 p-3',
-          'bg-input border border-border rounded-md',
+          'bg-background/60 border border-border/60 rounded-lg',
           'text-foreground',
           'resize-none',
           'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
@@ -139,9 +140,9 @@ export default function Composer({
         aria-label="Send message"
         className={cn(
           'px-4 py-2',
-          'bg-brand text-background',
-          'rounded-md',
-          'font-medium',
+          'bg-brand/90 text-background',
+          'rounded-lg',
+          'font-medium shadow-sm',
           'transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
           'disabled:opacity-50 disabled:cursor-not-allowed',

@@ -13,13 +13,13 @@ export default function MessageCard({
   ...props
 }) {
   const roleStyles = {
-    user: 'bg-blue-900/20 border border-blue-800/30',
-    system: 'bg-orange-900/20 border border-orange-800/30',
-    assistant: 'bg-muted/10 border border-border',
+    user: 'bg-brand/10 border border-brand/30',
+    system: 'bg-orange-500/10 border border-orange-400/30',
+    assistant: 'bg-background/50 border border-border/60',
   };
 
   const roleHeaderStyles = {
-    user: 'text-blue-300',
+    user: 'text-brand',
     system: 'text-orange-300',
     assistant: 'text-foreground',
   };
@@ -35,7 +35,8 @@ export default function MessageCard({
       role="article"
       aria-labelledby={headerId}
       className={cn(
-        'mb-4 p-3 rounded-md',
+        'mb-4 p-4 rounded-xl',
+        'shadow-[0_8px_24px_-20px_rgba(0,0,0,0.8)]',
         roleStyles[role] || roleStyles.assistant,
         className
       )}
@@ -44,7 +45,7 @@ export default function MessageCard({
       <strong
         id={headerId}
         className={cn(
-          'block',
+          'block text-xs uppercase tracking-[0.18em] mb-2',
           roleHeaderStyles[role] || roleHeaderStyles.assistant
         )}
       >

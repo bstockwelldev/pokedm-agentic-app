@@ -9,7 +9,7 @@ export default function AppShell({ children, className, ...props }) {
   return (
     <div
       className={cn(
-        'min-h-screen bg-background text-foreground',
+        'min-h-screen text-foreground',
         'flex flex-col',
         className
       )}

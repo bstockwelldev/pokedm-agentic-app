@@ -22,15 +22,16 @@ export default function ChatTimeline({
       aria-atomic="false"
       className={cn(
         'flex-1 overflow-y-auto min-h-0',
-        'border border-border rounded-lg',
-        'p-4',
-        'bg-background',
+        'border border-border/60 rounded-xl',
+        'p-5',
+        'bg-background/60 backdrop-blur',
+        'shadow-[0_12px_32px_-24px_rgba(0,0,0,0.8)]',
         className
       )}
       {...props}
     >
       {messages.length === 0 && !loading && (
-        <div className="text-muted italic">
+        <div className="rounded-lg border border-border/60 bg-background/50 p-4 text-sm text-muted">
           Welcome to PokeDM! Start your adventure by describing what you'd like to do.
         </div>
       )}
