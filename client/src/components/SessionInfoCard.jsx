@@ -43,7 +43,7 @@ export default function SessionInfoCard({ session, sessionId, className, ...prop
 
   return (
     <section
-      className={cn('px-4 pt-4 lg:hidden', className)}
+      className={cn('lg:hidden mb-4', className)}
       role="region"
       aria-label="Current session information"
       {...props}
