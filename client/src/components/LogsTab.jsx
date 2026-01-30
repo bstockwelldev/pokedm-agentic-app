@@ -74,10 +74,10 @@ export default function LogsTab({ messages = [] }) {
             key={type}
             onClick={() => setFilterType(type)}
             className={cn(
-              'px-3 py-1 text-xs rounded-md transition-colors',
+              'px-3 py-1 text-xs rounded-full transition-colors border',
               filterType === type
-                ? 'bg-brand text-background font-medium'
-                : 'bg-input border border-border text-muted hover:text-foreground hover:bg-muted/20'
+                ? 'bg-brand/90 text-background font-medium border-brand/40'
+                : 'bg-background/60 border-border/60 text-muted hover:text-foreground hover:bg-muted/20'
             )}
           >
             {type.replace('-', ' ')}
@@ -96,8 +96,8 @@ export default function LogsTab({ messages = [] }) {
           <div
             key={step.id}
             className={cn(
-              'border border-border rounded p-2',
-              'bg-background text-xs',
+              'border border-border/60 rounded-xl p-3',
+              'bg-background/60 text-xs shadow-[0_8px_24px_-20px_rgba(0,0,0,0.8)]',
               'hover:bg-muted/20 transition-colors'
             )}
           >
@@ -126,8 +126,8 @@ export default function LogsTab({ messages = [] }) {
               <button
                 onClick={() => toggleLog(step.id)}
                 className={cn(
-                  'px-2 py-1 text-xs rounded',
-                  'bg-input border border-border',
+                  'px-2 py-1 text-xs rounded-full',
+                  'bg-background/60 border border-border/60',
                   'text-muted hover:text-foreground',
                   'transition-colors'
                 )}
@@ -139,7 +139,7 @@ export default function LogsTab({ messages = [] }) {
 
             {/* Expanded Details */}
             {expandedLogs[step.id] && (
-              <div className="mt-2 pt-2 border-t border-border">
+              <div className="mt-2 pt-2 border-t border-border/60">
                 <JsonViewer data={step} />
               </div>
             )}
@@ -148,7 +148,7 @@ export default function LogsTab({ messages = [] }) {
       </div>
 
       {/* Summary */}
-      <div className="text-xs text-muted pt-2 border-t border-border">
+      <div className="text-xs text-muted pt-2 border-t border-border/60">
         Total: {allSteps.length} step(s)
         {filterType !== 'all' && ` (${filteredSteps.length} filtered)`}
       </div>

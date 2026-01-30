@@ -105,101 +105,63 @@ export default function DiagnosticsDrawer({ isOpen, onClose, diagnostics }) {
       aria-modal="true"
       aria-labelledby="diagnostics-title"
       onClick={handleOverlayClick}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '1rem',
-      }}
+      className={cn(
+        'fixed inset-0 z-50',
+        'flex items-end justify-center',
+        'bg-black/60 backdrop-blur-sm',
+        'p-4'
+      )}
     >
       <div
         ref={drawerRef}
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px 8px 0 0',
-          maxWidth: '600px',
-          width: '100%',
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 -4px 6px rgba(0, 0, 0, 0.1)',
-        }}
+        className={cn(
+          'w-full max-w-2xl max-h-[80vh]',
+          'bg-background/95 text-foreground',
+          'border border-border/60 rounded-t-xl',
+          'shadow-2xl flex flex-col'
+        )}
       >
         {/* Header */}
-        <div
-          style={{
-            padding: '1rem',
-            borderBottom: '1px solid #e5e7eb',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <h2
-            id="diagnostics-title"
-            style={{
-              margin: 0,
-              fontSize: '1.25rem',
-              fontWeight: '600',
-            }}
-          >
+        <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+          <h2 id="diagnostics-title" className="text-lg font-semibold">
             Error Diagnostics
           </h2>
           <button
             ref={closeButtonRef}
             onClick={onClose}
             aria-label="Close diagnostics drawer"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              padding: '0.25rem',
-              lineHeight: '1',
-              color: '#6b7280',
-            }}
-            onMouseEnter={(e) => (e.target.style.color = '#374151')}
-            onMouseLeave={(e) => (e.target.style.color = '#6b7280')}
+            className={cn(
+              'rounded-md p-2 text-muted',
+              'hover:text-foreground hover:bg-muted/20',
+              'focus:outline-none focus:ring-2 focus:ring-ring'
+            )}
           >
             ×
           </button>
         </div>
 
         {/* Content */}
-        <div
-          style={{
-            padding: '1rem',
-            overflowY: 'auto',
-            flex: 1,
-          }}
-        >
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ marginBottom: '0.5rem', fontWeight: '500' }}>Request Details</div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', fontFamily: 'monospace' }}>
+        <div className="p-4 overflow-y-auto flex-1 space-y-4">
+          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+            <div className="text-sm font-semibold text-foreground mb-2">Request Details</div>
+            <div className="text-xs text-muted font-mono space-y-1">
               {diagnostics.requestId && (
-                <div style={{ marginBottom: '0.25rem' }}>
+                <div>
                   <strong>Request ID:</strong> {diagnostics.requestId}
                 </div>
               )}
               {diagnostics.timestamp && (
-                <div style={{ marginBottom: '0.25rem' }}>
+                <div>
                   <strong>Timestamp:</strong> {new Date(diagnostics.timestamp).toLocaleString()}
                 </div>
               )}
               {diagnostics.endpoint && (
-                <div style={{ marginBottom: '0.25rem' }}>
+                <div>
                   <strong>Endpoint:</strong> {diagnostics.method || 'POST'} {diagnostics.endpoint}
                 </div>
               )}
               {diagnostics.statusCode && (
-                <div style={{ marginBottom: '0.25rem' }}>
+                <div>
                   <strong>Status Code:</strong> {diagnostics.statusCode}
                 </div>
               )}
@@ -207,8 +169,8 @@ export default function DiagnosticsDrawer({ isOpen, onClose, diagnostics }) {
           </div>
 
           {diagnostics.error && (
-            <div className="mb-4">
-              <div className="mb-2 font-medium text-foreground">Error Message</div>
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+              <div className="mb-2 text-sm font-semibold text-red-100">Error Message</div>
               <MarkdownText variant="error" className="text-sm">
                 {diagnostics.error}
               </MarkdownText>
@@ -216,8 +178,8 @@ export default function DiagnosticsDrawer({ isOpen, onClose, diagnostics }) {
           )}
 
           {diagnostics.details && (
-            <div className="mb-4">
-              <div className="mb-2 font-medium text-foreground">Details</div>
+            <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+              <div className="mb-2 text-sm font-semibold text-foreground">Details</div>
               <MarkdownText variant="compact" className="text-muted">
                 {diagnostics.details}
               </MarkdownText>
@@ -225,45 +187,21 @@ export default function DiagnosticsDrawer({ isOpen, onClose, diagnostics }) {
           )}
 
           {diagnostics.stack && (
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ marginBottom: '0.5rem', fontWeight: '500' }}>Stack Trace</div>
-              <pre
-                style={{
-                  fontSize: '0.75rem',
-                  color: '#6b7280',
-                  backgroundColor: '#f9fafb',
-                  padding: '0.75rem',
-                  borderRadius: '4px',
-                  overflowX: 'auto',
-                  fontFamily: 'monospace',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
+            <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+              <div className="mb-2 text-sm font-semibold text-foreground">Stack Trace</div>
+              <pre className="text-xs text-muted bg-background/80 p-3 rounded-md overflow-x-auto font-mono whitespace-pre-wrap break-words">
                 {diagnostics.stack}
               </pre>
             </div>
           )}
 
-          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
-            <div style={{ marginBottom: '0.5rem', fontWeight: '500' }}>Full Diagnostics JSON</div>
+          <div className="rounded-lg border border-border/60 bg-background/60 p-3">
+            <div className="mb-2 text-sm font-semibold text-foreground">Full Diagnostics JSON</div>
             <pre
               role="textbox"
               aria-readonly="true"
               aria-label="Full diagnostics JSON"
-              style={{
-                fontSize: '0.75rem',
-                color: '#374151',
-                backgroundColor: '#f9fafb',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                overflowX: 'auto',
-                fontFamily: 'monospace',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                maxHeight: '200px',
-                overflowY: 'auto',
-              }}
+              className="text-xs text-muted bg-background/80 p-3 rounded-md overflow-auto font-mono whitespace-pre-wrap break-words max-h-[200px]"
             >
               {diagnosticsJson}
             </pre>
@@ -271,48 +209,28 @@ export default function DiagnosticsDrawer({ isOpen, onClose, diagnostics }) {
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            padding: '1rem',
-            borderTop: '1px solid #e5e7eb',
-            display: 'flex',
-            gap: '0.5rem',
-            justifyContent: 'flex-end',
-          }}
-        >
+        <div className="px-4 py-3 border-t border-border/60 flex gap-2 justify-end">
           <button
             onClick={handleCopyToClipboard}
             aria-label="Copy diagnostics to clipboard"
-            style={{
-              backgroundColor: '#1976d2',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '0.875rem',
-            }}
-            onMouseEnter={(e) => (e.target.style.backgroundColor = '#1565c0')}
-            onMouseLeave={(e) => (e.target.style.backgroundColor = '#1976d2')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium',
+              'bg-brand/90 text-background shadow-sm',
+              'hover:opacity-90 transition-opacity',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background'
+            )}
           >
             Copy to Clipboard
           </button>
           <button
             onClick={onClose}
             aria-label="Close diagnostics"
-            style={{
-              backgroundColor: 'transparent',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              fontSize: '0.875rem',
-            }}
-            onMouseEnter={(e) => (e.target.style.backgroundColor = '#f9fafb')}
-            onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium',
+              'bg-background/60 text-foreground border border-border/60',
+              'hover:bg-muted/20 transition-colors',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background'
+            )}
           >
             Close
           </button>

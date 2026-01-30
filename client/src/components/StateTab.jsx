@@ -69,8 +69,8 @@ export default function StateTab({ session }) {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className={cn(
-            'w-full px-3 py-2 rounded-md',
-            'bg-input border border-border',
+            'w-full px-3 py-2 rounded-lg',
+            'bg-background/60 border border-border/60',
             'text-foreground text-sm',
             'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
             'placeholder:text-muted'
@@ -115,12 +115,12 @@ export default function StateTab({ session }) {
             >
               <div className="space-y-3">
                 {session.characters.map((char) => (
-                  <div key={char.character_id} className="p-2 rounded border border-border">
+                  <div key={char.character_id} className="p-3 rounded-lg border border-border/60 bg-background/40">
                     <div className="font-medium text-foreground">
                       {char.trainer?.name || 'Unknown Trainer'}
                     </div>
                     <div className="text-xs text-muted mt-1">
-                      {char.pokemon_party?.length || 0} Pokémon in party
+                      {char.pokemon_party?.length || 0} Pokemon in party
                     </div>
                     {char.pokemon_party && char.pokemon_party.length > 0 && (
                       <div className="text-xs text-muted mt-1">
@@ -147,7 +147,7 @@ export default function StateTab({ session }) {
             >
               {session.session.battle_state.active ? (
                 <div className="space-y-2">
-                  <div className="text-red-400 font-medium">⚔️ Battle Active</div>
+              <div className="text-red-300 font-medium">Battle Active</div>
                   <div className="text-sm text-muted">
                     Round: {session.session.battle_state.round || 0}
                   </div>
@@ -223,7 +223,7 @@ export default function StateTab({ session }) {
  */
 function Section({ title, expanded, onToggle, children }) {
   return (
-    <div className="border border-border rounded-md">
+    <div className="border border-border/60 rounded-xl bg-background/50">
       <button
         onClick={onToggle}
         className={cn(
@@ -238,7 +238,7 @@ function Section({ title, expanded, onToggle, children }) {
         <span className="text-muted">{expanded ? '−' : '+'}</span>
       </button>
       {expanded && (
-        <div className="p-3 border-t border-border">
+        <div className="p-3 border-t border-border/60">
           {children}
         </div>
       )}

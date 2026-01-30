@@ -91,10 +91,10 @@ export default function ToolsTab({ messages = [] }) {
             key={status}
             onClick={() => setFilterStatus(status)}
             className={cn(
-              'px-3 py-1 text-xs rounded-md transition-colors',
+              'px-3 py-1 text-xs rounded-full transition-colors border',
               filterStatus === status
-                ? 'bg-brand text-background font-medium'
-                : 'bg-input border border-border text-muted hover:text-foreground hover:bg-muted/20'
+                ? 'bg-brand/90 text-background font-medium border-brand/40'
+                : 'bg-background/60 border-border/60 text-muted hover:text-foreground hover:bg-muted/20'
             )}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -113,8 +113,8 @@ export default function ToolsTab({ messages = [] }) {
           <div
             key={execution.id}
             className={cn(
-              'border border-border rounded-lg p-3',
-              'bg-background',
+              'border border-border/60 rounded-xl p-3',
+              'bg-background/60 shadow-[0_8px_24px_-20px_rgba(0,0,0,0.8)]',
               execution.status === 'failed' && 'border-red-800/50 bg-red-900/10',
               execution.status === 'running' && 'border-yellow-800/50 bg-yellow-900/10',
               execution.status === 'done' && 'border-green-800/50 bg-green-900/10'
@@ -139,8 +139,8 @@ export default function ToolsTab({ messages = [] }) {
               <button
                 onClick={() => toggleTool(execution.id)}
                 className={cn(
-                  'px-2 py-1 text-xs rounded',
-                  'bg-input border border-border',
+                  'px-2 py-1 text-xs rounded-full',
+                  'bg-background/60 border border-border/60',
                   'text-muted hover:text-foreground',
                   'transition-colors'
                 )}
@@ -152,14 +152,14 @@ export default function ToolsTab({ messages = [] }) {
 
             {/* Expanded Details */}
             {expandedTools[execution.id] && (
-              <div className="mt-3 space-y-3 pt-3 border-t border-border">
+              <div className="mt-3 space-y-3 pt-3 border-t border-border/60">
                 {/* Parameters */}
                 {Object.keys(execution.parameters).length > 0 && (
                   <div>
                     <h5 className="text-sm font-medium text-foreground mb-2">
                       Parameters:
                     </h5>
-                    <div className="bg-muted/20 rounded p-2">
+                    <div className="bg-background/60 border border-border/60 rounded p-2">
                       <JsonViewer data={execution.parameters} />
                     </div>
                   </div>
@@ -171,7 +171,7 @@ export default function ToolsTab({ messages = [] }) {
                     <h5 className="text-sm font-medium text-foreground mb-2">
                       Result:
                     </h5>
-                    <div className="bg-muted/20 rounded p-2">
+                    <div className="bg-background/60 border border-border/60 rounded p-2">
                       {typeof execution.result === 'string' ? (
                         <MarkdownText variant="compact">
                           {execution.result}
