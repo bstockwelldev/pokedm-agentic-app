@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { cn } from '../lib/utils';
 import MarkdownText from './MarkdownText';
 import JsonViewer from './JsonViewer';
+import PokemonMedia from './PokemonMedia';
+import { parsePokemonRef } from '../lib/pokemonMedia';
 
 /**
  * StateTab - Enhanced session state display with structured sections
@@ -16,6 +18,7 @@ export default function StateTab({ session }) {
     inventory: false,
     flags: false,
     customPokemon: false,
+    discoveredPokemon: false,
     fullJson: false,
   });
 
@@ -54,6 +57,18 @@ export default function StateTab({ session }) {
       </div>
     );
   }
+
+  const sessionId = session.session?.session_id;
+
+  const getPokemonIdentifier = (pokemon) => {
+    const ref = pokemon?.species_ref?.ref || pokemon?.species_ref;
+    return parsePokemonRef(ref) || pokemon?.species_name || pokemon?.name || null;
+  };
+
+  const getDiscoveredPokemonIdentifier = (entry) => {
+    const ref = entry?.species_ref?.ref || entry?.species_ref;
+    return parsePokemonRef(ref) || null;
+  };
 
   return (
     <div className="space-y-4">
@@ -123,13 +138,33 @@ export default function StateTab({ session }) {
                       {char.pokemon_party?.length || 0} Pokemon in party
                     </div>
                     {char.pokemon_party && char.pokemon_party.length > 0 && (
-                      <div className="text-xs text-muted mt-1">
-                        {char.pokemon_party.map((p, idx) => (
-                          <span key={idx}>
-                            {p.name || p.species_name || 'Unknown'}
-                            {idx < char.pokemon_party.length - 1 ? ', ' : ''}
-                          </span>
-                        ))}
+                      <div className="mt-3 space-y-3">
+                        {char.pokemon_party.map((pokemon) => {
+                          const idOrName = getPokemonIdentifier(pokemon);
+                          const nickname = pokemon.nickname?.trim();
+                          const baseName = pokemon.species_name || pokemon.name || idOrName || 'Unknown Pokemon';
+                          const label = nickname ? `${nickname} (${baseName})` : baseName;
+
+                          return (
+                            <div
+                              key={pokemon.instance_id || `${char.character_id}-${baseName}`}
+                              className="rounded-lg border border-border/60 bg-background/60 p-3"
+                            >
+                              <PokemonMedia
+                                idOrName={idOrName}
+                                sessionId={sessionId}
+                                label={label}
+                                showOfficial
+                                showSprites
+                              />
+                              {pokemon.level && (
+                                <div className="mt-2 text-xs text-muted">
+                                  Level {pokemon.level}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -137,6 +172,39 @@ export default function StateTab({ session }) {
               </div>
             </Section>
           )}
+
+          {/* Discovered Pokemon Section */}
+          {session.continuity?.discovered_pokemon &&
+            session.continuity.discovered_pokemon.length > 0 && (
+              <Section
+                title="Discovered Pokemon"
+                expanded={expandedSections.discoveredPokemon}
+                onToggle={() => toggleSection('discoveredPokemon')}
+              >
+                <div className="space-y-3">
+                  {session.continuity.discovered_pokemon.map((entry, idx) => {
+                    const idOrName = getDiscoveredPokemonIdentifier(entry);
+                    const fallbackLabel = entry.species_ref?.ref || `Pokemon ${idx + 1}`;
+                    return (
+                      <div
+                        key={`${entry.first_seen_session_id || 'session'}-${idx}`}
+                        className="rounded-lg border border-border/60 bg-background/60 p-3"
+                      >
+                        <PokemonMedia
+                          idOrName={idOrName}
+                          sessionId={sessionId}
+                          label={fallbackLabel}
+                          showOfficial
+                        />
+                        <div className="mt-2 text-xs text-muted">
+                          First seen: {entry.first_seen_location_id || 'Unknown location'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+            )}
 
           {/* Battle State Section */}
           {session.session?.battle_state && (
