@@ -3,11 +3,25 @@
  * Uses PostgreSQL for production storage
  */
 
-import pg from 'pg';
+import { createRequire } from 'module';
 import { StorageAdapter, StorageError, registerAdapter } from './index.js';
 import { PokemonSessionSchema } from '../../schemas/session.js';
 
-const { Pool } = pg;
+const require = createRequire(import.meta.url);
+let pgModule = null;
+let pgLoadError = null;
+
+function loadPgModule() {
+  if (pgModule || pgLoadError) {
+    return { pgModule, pgLoadError };
+  }
+  try {
+    pgModule = require('pg');
+  } catch (error) {
+    pgLoadError = error;
+  }
+  return { pgModule, pgLoadError };
+}
 
 /**
  * PostgreSQL Storage Adapter
@@ -16,11 +30,19 @@ const { Pool } = pg;
 export class PostgresStorageAdapter extends StorageAdapter {
   constructor() {
     super();
+    const { pgModule: pg, pgLoadError: loadError } = loadPgModule();
+    if (!pg) {
+      throw new StorageError(
+        `PostgreSQL adapter requires the "pg" package. ${loadError?.message || ''}`.trim(),
+        'MISSING_DEPENDENCY'
+      );
+    }
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new StorageError('DATABASE_URL environment variable is required for PostgreSQL adapter', 'CONFIG_ERROR');
     }
 
+    const { Pool } = pg;
     this.pool = new Pool({
       connectionString,
       ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
