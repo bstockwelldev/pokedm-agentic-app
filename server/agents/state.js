@@ -3,16 +3,7 @@ import { z } from 'zod';
 import { getModel } from '../lib/modelProvider.js';
 import { statePrompt } from '../prompts/state.js';
 import { getAgentConfig } from '../config/agentConfig.js';
-import { CharacterSchema, PokemonSessionSchema } from '../schemas/session.js';
-import { CustomPokemonSchema } from '../schemas/customPokemon.js';
-
-const CustomDexUpdateSchema = z.object({
-  pokemon_entries: z.array(CustomPokemonSchema).optional(),
-  ruleset_flags: z.object({
-    allow_new_species: z.boolean().optional(),
-  }).optional(),
-  notes: z.string().optional(),
-});
+import { PokemonSessionSchema } from '../schemas/session.js';
 
 /**
  * Partial State Update Schema
@@ -105,8 +96,6 @@ const StateUpdateSchema = z.object({
       status: z.enum(['open', 'progressed', 'resolved']),
     })).optional(),
   }).optional(),
-  custom_dex: CustomDexUpdateSchema.optional(),
-  characters: z.array(CharacterSchema).optional(),
 }).describe('Partial state updates following the session schema');
 
 /**
@@ -130,7 +119,7 @@ ${context}
 
 ${userInput}
 
-Analyze the request and determine what state updates are needed. Return only the fields that need to be updated, following the session schema exactly (use custom_dex.pokemon_entries for custom Pokémon updates).`;
+Analyze the request and determine what state updates are needed. Return only the fields that need to be updated, following the session schema exactly.`;
 
   try {
     const result = await generateObject({
@@ -180,7 +169,6 @@ function buildStateContext(session) {
 function mergeStateUpdates(session, updates) {
   // Deep merge updates into session
   const merged = JSON.parse(JSON.stringify(session));
-  const normalizedUpdates = normalizeStateUpdates(updates);
 
   // Deep merge helper
   function deepMerge(target, source) {
@@ -196,45 +184,14 @@ function mergeStateUpdates(session, updates) {
   }
 
   // Merge updates
-  if (normalizedUpdates.session) {
-    merged.session = deepMerge(merged.session, normalizedUpdates.session);
+  if (updates.session) {
+    merged.session = deepMerge(merged.session, updates.session);
   }
-  if (normalizedUpdates.custom_dex) {
-    merged.custom_dex = deepMerge(merged.custom_dex, normalizedUpdates.custom_dex);
-  }
-  if (normalizedUpdates.continuity) {
-    merged.continuity = deepMerge(merged.continuity, normalizedUpdates.continuity);
-  }
-  if (normalizedUpdates.campaign) {
-    merged.campaign = deepMerge(merged.campaign, normalizedUpdates.campaign);
-  }
-  if (normalizedUpdates.characters) {
-    merged.characters = normalizedUpdates.characters; // Replace array
+  if (updates.continuity) {
+    merged.continuity = deepMerge(merged.continuity, updates.continuity);
   }
 
   return merged;
-}
-
-function normalizeStateUpdates(updates) {
-  if (!updates?.custom_dex?.pokemon_entries) {
-    return updates;
-  }
-
-  const pokemon = { ...(updates.custom_dex.pokemon || {}) };
-  for (const entry of updates.custom_dex.pokemon_entries) {
-    if (entry?.custom_species_id) {
-      pokemon[entry.custom_species_id] = entry;
-    }
-  }
-
-  const { pokemon_entries, ...customDexRest } = updates.custom_dex;
-  return {
-    ...updates,
-    custom_dex: {
-      ...customDexRest,
-      pokemon,
-    },
-  };
 }
 
 /**
