@@ -27,7 +27,32 @@ function writeStorage(sessionId, cache) {
 
 function normalizeIdOrName(value) {
   if (!value) return null;
-  return String(value).trim().toLowerCase();
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  const parts = raw.split(':');
+  let slug = (parts[parts.length - 1] || '').trim().toLowerCase();
+  if (!slug) return null;
+
+  slug = slug.replace(/♀/g, '-f').replace(/♂/g, '-m');
+  slug = slug.replace(/['’.]/g, '');
+  slug = slug.replace(/[^a-z0-9\s-_]/g, ' ');
+  slug = slug.replace(/[_\s]+/g, '-');
+  slug = slug.replace(/-+/g, '-').replace(/^-|-$/g, '');
+
+  return slug || null;
+}
+
+export function isCustomPokemonRef(value) {
+  if (!value) return false;
+  const raw = String(value).toLowerCase();
+  return (
+    raw.startsWith('custom:') ||
+    raw.startsWith('cstm_') ||
+    raw.startsWith('cstm-') ||
+    raw.includes(':cstm_') ||
+    raw.includes(':cstm-')
+  );
 }
 
 export function parsePokemonRef(ref) {
@@ -52,7 +77,25 @@ function selectSprite(sprites) {
   };
 }
 
+async function fetchFromServer(normalized, sessionId) {
+  const query = new URLSearchParams();
+  if (sessionId) {
+    query.set('sessionId', sessionId);
+  }
+  const queryString = query.toString();
+  const requestUrl = `/api/pokemon-media/${encodeURIComponent(normalized)}${queryString ? `?${queryString}` : ''}`;
+  const response = await fetch(requestUrl);
+  if (!response.ok) {
+    return null;
+  }
+  return response.json();
+}
+
 export async function fetchPokemonMedia(idOrName, sessionId) {
+  if (!idOrName || isCustomPokemonRef(idOrName)) {
+    return null;
+  }
+
   const normalized = normalizeIdOrName(idOrName);
   if (!normalized) return null;
 
@@ -67,19 +110,28 @@ export async function fetchPokemonMedia(idOrName, sessionId) {
     return storedCache[normalized];
   }
 
-  const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${normalized}`);
-  if (!response.ok) {
-    throw new Error(`Pokemon not found: ${normalized}`);
+  let media = null;
+  try {
+    media = await fetchFromServer(normalized, sessionId);
+  } catch (error) {
+    media = null;
   }
 
-  const data = await response.json();
-  const sprites = selectSprite(data.sprites);
-  const media = {
-    id: data.id,
-    name: data.name,
-    ...sprites,
-    fetchedAt: new Date().toISOString(),
-  };
+  if (!media) {
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${normalized}`);
+    if (!response.ok) {
+      throw new Error(`Pokemon not found: ${normalized}`);
+    }
+
+    const data = await response.json();
+    const sprites = selectSprite(data.sprites);
+    media = {
+      id: data.id,
+      name: data.name,
+      ...sprites,
+      fetchedAt: new Date().toISOString(),
+    };
+  }
 
   MEMORY_CACHE.set(cacheKey, media);
   storedCache[normalized] = media;

@@ -8,6 +8,7 @@ import crypto, { randomUUID } from 'crypto';
 
 // Import logger
 import logger, { Logger } from './lib/logger.js';
+import { fetchPokemonMedia } from './lib/pokemonMedia.js';
 
 // Import middleware
 import { validateAgentRequest } from './middleware/validateRequest.js';
@@ -293,6 +294,7 @@ async function handlePostAgent(req, res) {
 
     let userFriendlyMessage = err.message;
     let errorType = 'unknown';
+    let statusCode = err.statusCode || 500;
 
     if (rateLimitInfo) {
       errorType = 'rate_limit';
@@ -300,12 +302,18 @@ async function handlePostAgent(req, res) {
       if (rateLimitInfo.retryAfter) {
         userFriendlyMessage += `\n\nYou've reached the free tier quota limit. Consider upgrading to a paid plan or waiting before retrying.`;
       }
+      statusCode = 429;
     } else if (isModelError) {
       errorType = 'model_not_found';
       userFriendlyMessage = `Model not found or not supported. Please check the model name and try again.`;
+      statusCode = 400;
     }
 
-    res.status(500).json({
+    if (rateLimitInfo?.retryAfter) {
+      res.setHeader('Retry-After', Math.ceil(rateLimitInfo.retryAfter));
+    }
+
+    res.status(statusCode).json({
       error: 'Agent error',
       errorType,
       details: err.message,
@@ -322,6 +330,44 @@ async function handlePostAgent(req, res) {
 
 app.post(agentV1Path, validateAgentRequest, handlePostAgent);
 app.post(agentPath, validateAgentRequest, handlePostAgent);
+
+/**
+ * GET /api/v1/pokemon-media/:idOrName and GET /api/pokemon-media/:idOrName (legacy)
+ * Fetch Pokemon media (official art + sprites) with light caching.
+ */
+async function handlePokemonMedia(req, res) {
+  const { idOrName } = req.params;
+  const { sessionId } = req.query;
+
+  try {
+    const media = await fetchPokemonMedia({ idOrName, sessionId });
+    if (!media) {
+      return res.status(404).json({
+        error: 'Pokemon media not found',
+        details: `No media available for ${idOrName}`,
+        requestId: req.requestId,
+        timestamp: new Date().toISOString(),
+        endpoint: req.path,
+        method: req.method,
+      });
+    }
+
+    res.json(media);
+  } catch (err) {
+    req.logger.error('Pokemon media error', err, { endpoint: req.path });
+    res.status(500).json({
+      error: 'Pokemon media error',
+      details: err.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+      endpoint: req.path,
+      method: req.method,
+    });
+  }
+}
+
+app.get(`${API_V1}/pokemon-media/:idOrName`, handlePokemonMedia);
+app.get('/api/pokemon-media/:idOrName', handlePokemonMedia);
 
 /**
  * POST /api/v1/import and POST /api/import (legacy)
