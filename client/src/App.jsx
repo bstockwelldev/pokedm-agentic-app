@@ -77,6 +77,24 @@ function normalizeErrorText(value) {
   return String(value);
 }
 
+function isSessionEmptyForQuickActions(session) {
+  if (!session || !session.session) {
+    return true;
+  }
+
+  const hasTrainer = Array.isArray(session.characters) && session.characters.some((character) => {
+    const hasName = Boolean(character?.trainer?.name?.trim());
+    const hasParty = Array.isArray(character?.pokemon_party) && character.pokemon_party.length > 0;
+    return hasName || hasParty;
+  });
+  const hasObjectives = (session.session.current_objectives?.length || 0) > 0;
+  const hasEncounters = (session.session.encounters?.length || 0) > 0;
+  const hasEvents = (session.session.event_log?.length || 0) > 0;
+  const hasSceneDescription = Boolean(session.session.scene?.description?.trim());
+
+  return !(hasTrainer || hasObjectives || hasEncounters || hasEvents || hasSceneDescription);
+}
+
 /**
  * PokeDM Chat Application
  * Interacts with the multi-agent backend for Pokémon TTRPG adventures
@@ -100,6 +118,7 @@ export default function App() {
   // Compute derived state for choices (must be before functions/hooks that use it)
   const lastMessage = messages[messages.length - 1];
   const hasChoices = lastMessage?.choices && lastMessage.choices.length > 0;
+  const sessionIsEmpty = isSessionEmptyForQuickActions(session);
 
   // Initialize session and fetch models on mount
   useEffect(() => {
@@ -574,6 +593,7 @@ export default function App() {
             onKeyDown={handleKeyPress}
             loading={loading}
             disabled={!sessionId}
+            sessionIsEmpty={sessionIsEmpty}
           />
         </div>
 
