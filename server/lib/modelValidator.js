@@ -16,9 +16,14 @@ const MODEL_NAME_MAPPINGS = {
   'llama-3.1-70b-versatile': 'groq/llama-3.1-70b-versatile',
   'llama-3.3-70b-versatile': 'groq/llama-3.3-70b-versatile',
   'mixtral-8x7b-32768': 'groq/mixtral-8x7b-32768',
+  'openai/gpt-oss-20b': 'groq/openai/gpt-oss-20b',
+  'openai/gpt-oss-120b': 'groq/openai/gpt-oss-120b',
+  'meta-llama/llama-4-scout-17b-16e-instruct': 'groq/meta-llama/llama-4-scout-17b-16e-instruct',
+  'meta-llama/llama-4-maverick-17b-128e-instruct': 'groq/meta-llama/llama-4-maverick-17b-128e-instruct',
+  'moonshotai/kimi-k2-instruct-0905': 'groq/moonshotai/kimi-k2-instruct-0905',
 };
 
-// Valid model patterns
+// Valid model patterns (tested against model ID without groq/ prefix for Groq)
 const VALID_MODEL_PATTERNS = {
   google: [
     /^gemini-1\.5-(flash|pro)$/,
@@ -26,8 +31,11 @@ const VALID_MODEL_PATTERNS = {
     /^gemini-2\.5-(flash|pro)$/,
   ],
   groq: [
-    /^groq\/llama-3\.(1|2|3)-/,
-    /^groq\/mixtral-/,
+    /^llama-3\.(1|2|3)-/,
+    /^mixtral-/,
+    /^openai\/gpt-oss-/,
+    /^meta-llama\/llama-4-/,
+    /^moonshotai\//,
   ],
 };
 
@@ -50,11 +58,16 @@ export function normalizeModelName(modelName) {
   let normalized = modelName.replace(/-latest$/, '');
 
   // Add groq/ prefix if it's a Groq model without prefix
-  if (
-    (normalized.startsWith('llama-') || normalized.startsWith('mixtral-')) &&
-    !normalized.startsWith('groq/')
-  ) {
-    normalized = `groq/${normalized}`;
+  if (!normalized.startsWith('groq/')) {
+    if (
+      normalized.startsWith('llama-') ||
+      normalized.startsWith('mixtral-') ||
+      normalized.startsWith('openai/') ||
+      normalized.startsWith('meta-llama/') ||
+      normalized.startsWith('moonshotai/')
+    ) {
+      normalized = `groq/${normalized}`;
+    }
   }
 
   return normalized;

@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getModel } from '../lib/modelProvider.js';
+import { getProviderOptionsForStructuredOutput } from '../lib/structuredOutputHelper.js';
 import { statePrompt } from '../prompts/state.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 import { PokemonSessionSchema } from '../schemas/session.js';
@@ -127,6 +128,7 @@ Analyze the request and determine what state updates are needed. Return only the
       schema: StateUpdateSchema,
       prompt: fullPrompt,
       maxSteps: config.maxSteps,
+      providerOptions: getProviderOptionsForStructuredOutput(modelName),
     });
 
     // Get updates from structured output

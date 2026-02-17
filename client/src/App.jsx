@@ -84,7 +84,7 @@ function normalizeErrorText(value) {
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [model, setModel] = useState('gemini-2.5-flash');
+  const [model, setModel] = useState('groq/llama-3.1-8b-instant');
   const [availableModels, setAvailableModels] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [session, setSession] = useState(null);
@@ -132,12 +132,16 @@ export default function App() {
           }
           
           setAvailableModels(filteredModels.length > 0 ? filteredModels : models);
-          // Set default model if available
-          if (filteredModels.length > 0) {
-            const defaultModel = filteredModels.find((m) => m.id === 'gemini-2.5-flash') || filteredModels[0];
+          // Set default model: prefer Llama 3.1 8B on Groq, then first Groq, then first model
+          const list = filteredModels.length > 0 ? filteredModels : models;
+          if (list.length > 0) {
+            const defaultModel =
+              list.find((m) => m.id === 'groq/llama-3.1-8b-instant') ||
+              list.find((m) => m.provider === 'groq') ||
+              list[0];
             setModel(defaultModel.id);
           } else if (models.length > 0) {
-            const defaultModel = models.find((m) => m.id === 'gemini-2.5-flash') || models[0];
+            const defaultModel = models.find((m) => m.id === 'groq/llama-3.1-8b-instant') || models.find((m) => m.provider === 'groq') || models[0];
             const normalized = normalizeModelName(defaultModel.id);
             setModel(normalized || defaultModel.id);
           }
@@ -145,16 +149,18 @@ export default function App() {
           if (import.meta.env.DEV) {
             console.error('[CLIENT] Failed to fetch models:', response.status, response.statusText);
           }
-          // Fallback to known models including Groq
+          // Fallback to known models (Groq default first, then structured-output–capable)
           const fallbackModels = [
-            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google' },
-            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google' },
+            { id: 'groq/llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant (Groq)', provider: 'groq' },
             { id: 'groq/llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile (Groq)', provider: 'groq' },
             { id: 'groq/llama-3.1-70b-versatile', name: 'Llama 3.1 70B Versatile (Groq)', provider: 'groq' },
-            { id: 'groq/llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant (Groq)', provider: 'groq' },
             { id: 'groq/mixtral-8x7b-32768', name: 'Mixtral 8x7B 32K (Groq)', provider: 'groq' },
             { id: 'groq/llama-3.2-90b-text-preview', name: 'Llama 3.2 90B Text Preview (Groq)', provider: 'groq' },
             { id: 'groq/llama-3.2-11b-text-preview', name: 'Llama 3.2 11B Text Preview (Groq)', provider: 'groq' },
+            { id: 'groq/openai/gpt-oss-20b', name: 'GPT OSS 20B (Groq)', provider: 'groq' },
+            { id: 'groq/meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B (Groq)', provider: 'groq' },
+            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google' },
+            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google' },
           ];
           if (import.meta.env.DEV) {
             console.log(`[CLIENT] Using fallback models: ${fallbackModels.length} total`);
@@ -165,16 +171,18 @@ export default function App() {
         if (import.meta.env.DEV) {
           console.error('[CLIENT] Failed to fetch models:', err);
         }
-        // Fallback to known models including Groq
+        // Fallback to known models (Groq default first)
         const fallbackModels = [
-          { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google' },
-          { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google' },
+          { id: 'groq/llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant (Groq)', provider: 'groq' },
           { id: 'groq/llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile (Groq)', provider: 'groq' },
           { id: 'groq/llama-3.1-70b-versatile', name: 'Llama 3.1 70B Versatile (Groq)', provider: 'groq' },
-          { id: 'groq/llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant (Groq)', provider: 'groq' },
           { id: 'groq/mixtral-8x7b-32768', name: 'Mixtral 8x7B 32K (Groq)', provider: 'groq' },
           { id: 'groq/llama-3.2-90b-text-preview', name: 'Llama 3.2 90B Text Preview (Groq)', provider: 'groq' },
           { id: 'groq/llama-3.2-11b-text-preview', name: 'Llama 3.2 11B Text Preview (Groq)', provider: 'groq' },
+          { id: 'groq/openai/gpt-oss-20b', name: 'GPT OSS 20B (Groq)', provider: 'groq' },
+          { id: 'groq/meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B (Groq)', provider: 'groq' },
+          { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google' },
+          { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google' },
         ];
         if (import.meta.env.DEV) {
           console.log(`[CLIENT] Using fallback models: ${fallbackModels.length} total`);

@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getModel } from '../lib/modelProvider.js';
+import { getProviderOptionsForStructuredOutput } from '../lib/structuredOutputHelper.js';
 import { dmPrompt } from '../prompts/dm.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 import { updateSessionState } from './state.js';
@@ -51,6 +52,7 @@ Provide narration and 2-4 choices for the players.`;
       schema: DMAgentResponseSchema,
       prompt: fullPrompt,
       maxSteps: config.maxSteps,
+      providerOptions: getProviderOptionsForStructuredOutput(modelName),
     });
 
     const response = result.object;

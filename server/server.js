@@ -50,7 +50,7 @@ app.use((req, res, next) => {
 });
 
 // Default model
-const DEFAULT_MODEL = process.env.LLM_MODEL || 'gemini-1.5-pro-latest';
+const DEFAULT_MODEL = process.env.LLM_MODEL || 'groq/llama-3.1-8b-instant';
 
 /**
  * Generate a simple recap from session history (fallback)

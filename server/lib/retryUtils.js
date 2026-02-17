@@ -44,23 +44,28 @@ export function isRateLimitError(error) {
 }
 
 /**
- * Check if an error is a model not found error
+ * Check if an error is a model not found or model capability error (non-retryable)
+ * Includes json_schema / response format errors so we don't retry incompatible models
  * @param {Error} error - Error object
- * @returns {boolean} True if model not found error
+ * @returns {boolean} True if model not found or capability error
  */
 export function isModelNotFoundError(error) {
   if (!error || !error.message) return false;
 
   const message = error.message.toLowerCase();
-  const details = error.details?.toLowerCase() || '';
+  const details = (error.details && String(error.details).toLowerCase()) || '';
 
-  return (
-    message.includes('not found') ||
-    message.includes('is not found') ||
-    message.includes('not supported') ||
-    details.includes('not found') ||
-    details.includes('not supported')
-  );
+  const modelErrorIndicators = [
+    'not found',
+    'is not found',
+    'not supported',
+    'json_schema',
+    'does not support response format',
+    'response format',
+  ];
+
+  const combined = `${message} ${details}`;
+  return modelErrorIndicators.some((indicator) => combined.includes(indicator));
 }
 
 /**
