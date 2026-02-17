@@ -5,6 +5,11 @@ import { getProviderOptionsForStructuredOutput } from '../lib/structuredOutputHe
 import { dmPrompt } from '../prompts/dm.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 import { updateSessionState } from './state.js';
+import {
+  createEncounterStateUpdate,
+  detectEncounterType,
+  shouldStartEncounter,
+} from '../services/encounterService.js';
 import logger from '../lib/logger.js';
 
 /**
@@ -20,7 +25,7 @@ const DMAgentResponseSchema = z.object({
       risk_level: z.enum(['low', 'medium', 'high']).describe('Risk level of this choice'),
     })
   ).min(2).max(4).describe('2-4 player choice options'),
-  safe_default: z.string().optional().describe('Option ID of the safest default choice'),
+  safe_default: z.string().describe('Option ID of the safest default choice'),
 });
 
 /**
@@ -56,26 +61,54 @@ Provide narration and 2-4 choices for the players.`;
     });
 
     const response = result.object;
-    const choices = response.choices.map((choice, index) => ({
+    const generatedChoices = response.choices.map((choice, index) => ({
       ...choice,
       option_id: choice.option_id || `option_${index + 1}`,
     }));
-    
+    let finalNarration = response.narration;
+    let finalChoices = generatedChoices;
+    let finalSafeDefault = resolveSafeDefaultOption(response.safe_default, finalChoices);
+    let encounterState = null;
+
+    // Backstop for encounter pacing: trigger a concrete encounter when appropriate.
+    if (shouldStartEncounter({ userInput, narration: response.narration, session })) {
+      const encounterType = detectEncounterType(`${userInput} ${response.narration}`);
+      encounterState = createEncounterStateUpdate(session, { encounterType });
+      finalNarration = `${response.narration.trim()}\n\n${encounterState.encounterNarration}`;
+      finalChoices = encounterState.choices;
+      finalSafeDefault = encounterState.safe_default;
+    }
+
     // Update session state with presented choices and continuity tracking
     let updatedSession = null;
-    if (choices.length > 0) {
+    if (finalChoices.length > 0) {
       try {
         // Determine if this is a significant event that should be tracked
-        const isSignificantEvent = detectSignificantEvent(response.narration, session);
-        
+        const isSignificantEvent = detectSignificantEvent(finalNarration, session);
+        const eventLogEntries = buildBaseEventLogEntries(finalNarration, finalChoices, finalSafeDefault);
+
+        if (encounterState) {
+          eventLogEntries.push(...encounterState.eventLogEntries);
+        }
+
         const updates = {
           session: {
             player_choices: {
-              options_presented: choices,
-              safe_default: response.safe_default || choices[0]?.option_id || null,
+              options_presented: finalChoices,
+              safe_default: finalSafeDefault,
             },
+            scene: {
+              description: summarizeSceneDescription(finalNarration),
+              mood: encounterState ? 'tense' : inferSceneMood(finalNarration),
+            },
+            event_log: appendEventLogEntries(session.session?.event_log || [], eventLogEntries),
           },
         };
+
+        if (encounterState) {
+          updates.session.encounters = [...(session.session?.encounters || []), encounterState.encounter];
+          updates.session.battle_state = encounterState.battleState;
+        }
 
         // Add continuity tracking for significant events
         if (isSignificantEvent) {
@@ -85,15 +118,15 @@ Provide narration and 2-4 choices for the players.`;
               {
                 session_id: session.session.session_id,
                 episode_title: session.session.episode_title || 'Untitled Episode',
-                summary: extractEventSummary(response.narration),
+                summary: extractEventSummary(finalNarration),
                 canonized: false,
                 date: new Date().toISOString(),
-                tags: extractEventTags(response.narration),
+                tags: extractEventTags(finalNarration),
               },
             ],
             unresolved_hooks: updateUnresolvedHooks(
               session.continuity?.unresolved_hooks || [],
-              response.narration,
+              finalNarration,
               session.session.session_id
             ),
           };
@@ -107,8 +140,8 @@ Provide narration and 2-4 choices for the players.`;
     }
 
     return {
-      narration: response.narration,
-      choices: choices,
+      narration: finalNarration,
+      choices: finalChoices,
       steps: result.steps || [],
       updatedSession: updatedSession,
     };
@@ -116,6 +149,14 @@ Provide narration and 2-4 choices for the players.`;
     logger.error('DM Agent error', { error: error.message, stack: error.stack });
     throw error;
   }
+}
+
+function resolveSafeDefaultOption(candidateOptionId, choices) {
+  if (candidateOptionId && choices.some((choice) => choice.option_id === candidateOptionId)) {
+    return candidateOptionId;
+  }
+  const lowRiskChoice = choices.find((choice) => choice.risk_level === 'low');
+  return lowRiskChoice?.option_id || choices[0]?.option_id || 'option_1';
 }
 
 function buildDMContext(session) {
@@ -141,6 +182,50 @@ function buildDMContext(session) {
   }
 
   return context;
+}
+
+function buildBaseEventLogEntries(narration, choices, safeDefault) {
+  return [
+    {
+      t: new Date().toISOString(),
+      kind: 'scene',
+      summary: extractEventSummary(narration),
+      details: summarizeSceneDescription(narration),
+    },
+    {
+      t: new Date().toISOString(),
+      kind: 'choice',
+      summary: `Presented ${choices.length} options`,
+      details: `Safe default: ${safeDefault}`,
+    },
+  ];
+}
+
+function appendEventLogEntries(existingEntries, newEntries, maxEntries = 200) {
+  const merged = [...existingEntries, ...newEntries];
+  if (merged.length <= maxEntries) {
+    return merged;
+  }
+  return merged.slice(-maxEntries);
+}
+
+function summarizeSceneDescription(narration) {
+  return narration.replace(/\s+/g, ' ').trim().slice(0, 280);
+}
+
+function inferSceneMood(narration) {
+  const normalized = narration.toLowerCase();
+  if (normalized.includes('battle') || normalized.includes('danger') || normalized.includes('threat')) {
+    return 'tense';
+  }
+  if (
+    normalized.includes('explore') ||
+    normalized.includes('journey') ||
+    normalized.includes('discover')
+  ) {
+    return 'adventurous';
+  }
+  return 'calm';
 }
 
 /**
