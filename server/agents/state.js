@@ -1,7 +1,10 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getModel } from '../lib/modelProvider.js';
-import { getProviderOptionsForStructuredOutput } from '../lib/structuredOutputHelper.js';
+import {
+  ensureJsonPromptHint,
+  getProviderOptionsForStructuredOutput,
+} from '../lib/structuredOutputHelper.js';
 import { statePrompt } from '../prompts/state.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 import { PokemonSessionSchema } from '../schemas/session.js';
@@ -121,13 +124,14 @@ ${context}
 ${userInput}
 
 Analyze the request and determine what state updates are needed. Return only the fields that need to be updated, following the session schema exactly.`;
+  const prompt = ensureJsonPromptHint(fullPrompt, modelName);
 
   try {
     const providerOptions = getStateProviderOptions(modelName);
     const result = await generateObject({
       model: await getModel(modelName),
       schema: StateUpdateSchema,
-      prompt: fullPrompt,
+      prompt,
       maxSteps: config.maxSteps,
       providerOptions,
     });

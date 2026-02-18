@@ -15,6 +15,16 @@ const GROQ_STRUCTURED_OUTPUT_MODEL_IDS = new Set([
   'meta-llama/llama-4-scout-17b-16e-instruct',
 ]);
 
+/** Model prefixes that should be treated as Groq identifiers when unprefixed. */
+const GROQ_MODEL_PREFIXES = [
+  'groq/',
+  'llama-',
+  'mixtral-',
+  'openai/',
+  'meta-llama/',
+  'moonshotai/',
+];
+
 /**
  * Get the raw Groq model ID (without groq/ prefix)
  * @param {string} modelName - e.g. 'groq/llama-3.1-8b-instant'
@@ -26,11 +36,23 @@ function getGroqModelId(modelName) {
 }
 
 /**
+ * Whether the supplied model name should be treated as Groq.
+ * Supports both canonical "groq/..." and common unprefixed Groq IDs.
+ * @param {string} modelName
+ * @returns {boolean}
+ */
+function isGroqModelName(modelName) {
+  if (!modelName || typeof modelName !== 'string') return false;
+  return GROQ_MODEL_PREFIXES.some((prefix) => modelName.startsWith(prefix));
+}
+
+/**
  * Whether this Groq model supports json_schema (Structured Outputs)
  * @param {string} modelName - Model identifier (e.g. groq/llama-3.1-8b-instant)
  * @returns {boolean}
  */
 export function supportsGroqStructuredOutput(modelName) {
+  if (!isGroqModelName(modelName)) return false;
   const groqId = getGroqModelId(modelName);
   return groqId.length > 0 && GROQ_STRUCTURED_OUTPUT_MODEL_IDS.has(groqId);
 }
@@ -43,9 +65,32 @@ export function supportsGroqStructuredOutput(modelName) {
  */
 export function getProviderOptionsForStructuredOutput(modelName) {
   if (!modelName || typeof modelName !== 'string') return {};
-  if (!modelName.startsWith('groq/')) return {};
+  if (!isGroqModelName(modelName)) return {};
   if (supportsGroqStructuredOutput(modelName)) return {};
   return { groq: { structuredOutputs: false } };
+}
+
+/**
+ * Whether prompt text must explicitly include "json" for provider compatibility.
+ * Groq JSON Object Mode rejects requests that do not mention JSON in messages.
+ * @param {string} modelName
+ * @returns {boolean}
+ */
+export function requiresJsonPromptHint(modelName) {
+  return isGroqModelName(modelName) && !supportsGroqStructuredOutput(modelName);
+}
+
+/**
+ * Ensure the prompt contains the "json" keyword when required by provider mode.
+ * @param {string} prompt
+ * @param {string} modelName
+ * @returns {string}
+ */
+export function ensureJsonPromptHint(prompt, modelName) {
+  if (typeof prompt !== 'string') return prompt;
+  if (!requiresJsonPromptHint(modelName)) return prompt;
+  if (/\bjson\b/i.test(prompt)) return prompt;
+  return `${prompt}\n\nReturn a valid json object that matches the required schema.`;
 }
 
 /**
@@ -67,6 +112,8 @@ export function annotateModelsWithStructuredOutputSupport(models) {
 export default {
   supportsGroqStructuredOutput,
   getProviderOptionsForStructuredOutput,
+  requiresJsonPromptHint,
+  ensureJsonPromptHint,
   annotateModelsWithStructuredOutputSupport,
   GROQ_STRUCTURED_OUTPUT_MODEL_IDS: [...GROQ_STRUCTURED_OUTPUT_MODEL_IDS],
 };
