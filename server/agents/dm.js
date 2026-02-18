@@ -1,7 +1,10 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getModel } from '../lib/modelProvider.js';
-import { getProviderOptionsForStructuredOutput } from '../lib/structuredOutputHelper.js';
+import {
+  ensureJsonPromptHint,
+  getProviderOptionsForStructuredOutput,
+} from '../lib/structuredOutputHelper.js';
 import { dmPrompt } from '../prompts/dm.js';
 import { getAgentConfig } from '../config/agentConfig.js';
 import { updateSessionState } from './state.js';
@@ -50,12 +53,13 @@ ${context}
 ${userInput}
 
 Provide narration and 2-4 choices for the players.`;
+  const prompt = ensureJsonPromptHint(fullPrompt, modelName);
 
   try {
     const result = await generateObject({
       model: await getModel(modelName),
       schema: DMAgentResponseSchema,
-      prompt: fullPrompt,
+      prompt,
       maxSteps: config.maxSteps,
       providerOptions: getProviderOptionsForStructuredOutput(modelName),
     });
