@@ -1,9 +1,10 @@
-import { generateObject } from 'ai';
+import { generateObject, generateText } from 'ai';
 import { z } from 'zod';
 import { getModel } from '../lib/modelProvider.js';
 import {
   ensureJsonPromptHint,
   getProviderOptionsForStructuredOutput,
+  isRecoverableStructuredOutputError,
 } from '../lib/structuredOutputHelper.js';
 import { dmPrompt } from '../prompts/dm.js';
 import { getAgentConfig } from '../config/agentConfig.js';
@@ -56,29 +57,25 @@ Provide narration and 2-4 choices for the players.`;
   const prompt = ensureJsonPromptHint(fullPrompt, modelName);
 
   try {
-    const result = await generateObject({
-      model: await getModel(modelName),
-      schema: DMAgentResponseSchema,
+    const { response, steps } = await generateStructuredDMResponse({
+      modelName,
       prompt,
       maxSteps: config.maxSteps,
-      providerOptions: getProviderOptionsForStructuredOutput(modelName),
+      session,
+      userInput,
     });
 
-    const response = result.object;
-    const generatedChoices = response.choices.map((choice, index) => ({
-      ...choice,
-      option_id: choice.option_id || `option_${index + 1}`,
-    }));
-    let finalNarration = response.narration;
+    const generatedChoices = normalizeGeneratedChoices(response.choices, session);
+    let finalNarration = normalizeNarration(response.narration, userInput);
     let finalChoices = generatedChoices;
     let finalSafeDefault = resolveSafeDefaultOption(response.safe_default, finalChoices);
     let encounterState = null;
 
     // Backstop for encounter pacing: trigger a concrete encounter when appropriate.
-    if (shouldStartEncounter({ userInput, narration: response.narration, session })) {
-      const encounterType = detectEncounterType(`${userInput} ${response.narration}`);
+    if (shouldStartEncounter({ userInput, narration: finalNarration, session })) {
+      const encounterType = detectEncounterType(`${userInput} ${finalNarration}`);
       encounterState = createEncounterStateUpdate(session, { encounterType });
-      finalNarration = `${response.narration.trim()}\n\n${encounterState.encounterNarration}`;
+      finalNarration = `${finalNarration.trim()}\n\n${encounterState.encounterNarration}`;
       finalChoices = encounterState.choices;
       finalSafeDefault = encounterState.safe_default;
     }
@@ -146,13 +143,195 @@ Provide narration and 2-4 choices for the players.`;
     return {
       narration: finalNarration,
       choices: finalChoices,
-      steps: result.steps || [],
+      steps,
       updatedSession: updatedSession,
     };
   } catch (error) {
     logger.error('DM Agent error', { error: error.message, stack: error.stack });
     throw error;
   }
+}
+
+async function generateStructuredDMResponse({
+  modelName,
+  prompt,
+  maxSteps,
+  session,
+  userInput,
+}) {
+  try {
+    const result = await generateObject({
+      model: await getModel(modelName),
+      schema: DMAgentResponseSchema,
+      prompt,
+      maxSteps,
+      providerOptions: getProviderOptionsForStructuredOutput(modelName),
+    });
+
+    return {
+      response: result.object,
+      steps: result.steps || [],
+    };
+  } catch (error) {
+    if (!isRecoverableStructuredOutputError(error)) {
+      throw error;
+    }
+
+    logger.warn('DM structured output failed, using text fallback', {
+      error: error.message,
+      modelName,
+    });
+    return generateFallbackDMResponse({
+      modelName,
+      prompt,
+      maxSteps,
+      session,
+      userInput,
+    });
+  }
+}
+
+async function generateFallbackDMResponse({
+  modelName,
+  prompt,
+  maxSteps,
+  session,
+  userInput,
+}) {
+  const fallbackPrompt = `${prompt}
+
+Return a single json object only, with this exact shape:
+{
+  "narration": string,
+  "choices": [
+    { "option_id": string, "label": string, "description": string, "risk_level": "low" | "medium" | "high" }
+  ],
+  "safe_default": string
+}`;
+
+  const result = await generateText({
+    model: await getModel(modelName),
+    prompt: ensureJsonPromptHint(fallbackPrompt, modelName),
+    maxSteps: Math.min(maxSteps, 2),
+  });
+
+  const parsedObject = extractJsonObject(result.text);
+  const parsed = DMAgentResponseSchema.safeParse(parsedObject);
+  if (parsed.success) {
+    return {
+      response: parsed.data,
+      steps: result.steps || [],
+    };
+  }
+
+  const fallbackChoices = buildFallbackChoices(session);
+  return {
+    response: {
+      narration: normalizeNarration(result.text, userInput),
+      choices: fallbackChoices,
+      safe_default: fallbackChoices[0].option_id,
+    },
+    steps: result.steps || [],
+  };
+}
+
+function extractJsonObject(text) {
+  if (typeof text !== 'string') {
+    return null;
+  }
+
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Continue with substring extraction.
+  }
+
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace === -1 || lastBrace <= firstBrace) {
+    return null;
+  }
+
+  const candidate = trimmed.slice(firstBrace, lastBrace + 1);
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeGeneratedChoices(choices, session) {
+  if (!Array.isArray(choices)) {
+    return buildFallbackChoices(session);
+  }
+
+  const normalized = choices
+    .slice(0, 4)
+    .map((choice, index) => ({
+      option_id: choice?.option_id || `option_${index + 1}`,
+      label: choice?.label || `Option ${index + 1}`,
+      description: choice?.description || 'Continue the adventure.',
+      risk_level: normalizeRiskLevel(choice?.risk_level),
+    }));
+
+  if (normalized.length >= 2) {
+    return normalized;
+  }
+
+  return buildFallbackChoices(session);
+}
+
+function normalizeRiskLevel(riskLevel) {
+  if (riskLevel === 'low' || riskLevel === 'medium' || riskLevel === 'high') {
+    return riskLevel;
+  }
+  return 'medium';
+}
+
+function normalizeNarration(narration, userInput) {
+  if (typeof narration === 'string' && narration.trim().length > 0) {
+    return narration.trim();
+  }
+
+  return `You press onward after "${userInput}". The path ahead opens into a new scene, and your party prepares for what comes next.`;
+}
+
+function buildFallbackChoices(session) {
+  const priorChoices = session.session?.player_choices?.options_presented;
+  if (Array.isArray(priorChoices) && priorChoices.length >= 2) {
+    return priorChoices.slice(0, 4).map((choice, index) => ({
+      option_id: choice?.option_id || `option_${index + 1}`,
+      label: choice?.label || `Option ${index + 1}`,
+      description: choice?.description || 'Continue with this approach.',
+      risk_level: normalizeRiskLevel(choice?.risk_level),
+    }));
+  }
+
+  return [
+    {
+      option_id: 'option_1',
+      label: 'Advance carefully',
+      description: 'Move forward while scanning for clues or nearby wild Pokemon.',
+      risk_level: 'low',
+    },
+    {
+      option_id: 'option_2',
+      label: 'Talk to someone nearby',
+      description: 'Ask an NPC for guidance, rumors, or route advice before acting.',
+      risk_level: 'low',
+    },
+    {
+      option_id: 'option_3',
+      label: 'Prepare your party',
+      description: 'Review your Pokemon and supplies before the next challenge.',
+      risk_level: 'medium',
+    },
+  ];
 }
 
 function resolveSafeDefaultOption(candidateOptionId, choices) {

@@ -1,6 +1,7 @@
 import {
   ensureJsonPromptHint,
   getProviderOptionsForStructuredOutput,
+  isRecoverableStructuredOutputError,
   requiresJsonPromptHint,
   supportsGroqStructuredOutput,
 } from '../lib/structuredOutputHelper.js';
@@ -51,5 +52,23 @@ describe('structuredOutputHelper', () => {
     const enriched = ensureJsonPromptHint(prompt, 'groq/openai/gpt-oss-20b');
     expect(enriched).toContain(prompt);
     expect(enriched).toMatch(/\bjson\b/i);
+  });
+
+  test('detects recoverable structured output parser failures', () => {
+    expect(
+      isRecoverableStructuredOutputError(
+        new Error("Cannot read properties of undefined (reading 'value')")
+      )
+    ).toBe(true);
+    expect(
+      isRecoverableStructuredOutputError(
+        new Error("'messages' must contain the word 'json' in some form")
+      )
+    ).toBe(false);
+    expect(
+      isRecoverableStructuredOutputError(
+        new Error("request failed due to response_format configuration")
+      )
+    ).toBe(true);
   });
 });
