@@ -22,9 +22,9 @@ describe('structuredOutputHelper', () => {
     });
   });
 
-  test('requires JSON prompt hint for Groq JSON object mode models', () => {
+  test('requires JSON prompt hint for all Groq models', () => {
     expect(requiresJsonPromptHint('groq/llama-3.1-8b-instant')).toBe(true);
-    expect(requiresJsonPromptHint('groq/openai/gpt-oss-20b')).toBe(false);
+    expect(requiresJsonPromptHint('groq/openai/gpt-oss-20b')).toBe(true);
     expect(requiresJsonPromptHint('gemini-2.5-flash')).toBe(false);
   });
 
@@ -41,9 +41,15 @@ describe('structuredOutputHelper', () => {
     expect(ensureJsonPromptHint(prompt, 'groq/llama-3.1-8b-instant')).toBe(prompt);
   });
 
-  test('does not append json hint for non-required models', () => {
+  test('does not append json hint for non-Groq models', () => {
     const prompt = 'Return the response now.';
     expect(ensureJsonPromptHint(prompt, 'gemini-2.5-flash')).toBe(prompt);
-    expect(ensureJsonPromptHint(prompt, 'groq/openai/gpt-oss-20b')).toBe(prompt);
+  });
+
+  test('appends json hint for Groq models when missing', () => {
+    const prompt = 'Return the response now.';
+    const enriched = ensureJsonPromptHint(prompt, 'groq/openai/gpt-oss-20b');
+    expect(enriched).toContain(prompt);
+    expect(enriched).toMatch(/\bjson\b/i);
   });
 });

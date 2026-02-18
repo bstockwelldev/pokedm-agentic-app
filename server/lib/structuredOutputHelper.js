@@ -72,12 +72,14 @@ export function getProviderOptionsForStructuredOutput(modelName) {
 
 /**
  * Whether prompt text must explicitly include "json" for provider compatibility.
- * Groq JSON Object Mode rejects requests that do not mention JSON in messages.
+ * Some Groq generateObject paths use JSON Object Mode and reject requests when
+ * no message includes the word "json". We keep the hint enabled for all Groq
+ * models so agent-level provider overrides cannot regress this behavior.
  * @param {string} modelName
  * @returns {boolean}
  */
 export function requiresJsonPromptHint(modelName) {
-  return isGroqModelName(modelName) && !supportsGroqStructuredOutput(modelName);
+  return isGroqModelName(modelName);
 }
 
 /**
