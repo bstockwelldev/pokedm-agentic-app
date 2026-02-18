@@ -15,6 +15,9 @@ const GROQ_STRUCTURED_OUTPUT_MODEL_IDS = new Set([
   'meta-llama/llama-4-scout-17b-16e-instruct',
 ]);
 
+const JSON_MODE_PROMPT_HINT =
+  '\n\nIMPORTANT: Respond with a valid JSON object that matches the requested schema.';
+
 /**
  * Get the raw Groq model ID (without groq/ prefix)
  * @param {string} modelName - e.g. 'groq/llama-3.1-8b-instant'
@@ -49,6 +52,23 @@ export function getProviderOptionsForStructuredOutput(modelName) {
 }
 
 /**
+ * Ensure prompt text contains "json" for Groq JSON Object Mode.
+ * Groq rejects response_format json_object requests when prompt/messages do not
+ * mention JSON explicitly.
+ * @param {string} prompt - Prompt text for generateObject
+ * @param {string} modelName - Model identifier
+ * @returns {string} Prompt with JSON hint when needed
+ */
+export function ensureJsonModePromptCompatibility(prompt, modelName) {
+  if (typeof prompt !== 'string') return prompt;
+  if (!modelName || typeof modelName !== 'string') return prompt;
+  if (!modelName.startsWith('groq/')) return prompt;
+  if (supportsGroqStructuredOutput(modelName)) return prompt;
+  if (/\bjson\b/i.test(prompt)) return prompt;
+  return `${prompt}${JSON_MODE_PROMPT_HINT}`;
+}
+
+/**
  * Annotate a list of models with supportsStructuredOutput (for Groq only)
  * @param {Array<{id: string, name?: string, provider: string}>} models
  * @returns {Array<{id: string, name?: string, provider: string, supportsStructuredOutput?: boolean}>}
@@ -67,6 +87,7 @@ export function annotateModelsWithStructuredOutputSupport(models) {
 export default {
   supportsGroqStructuredOutput,
   getProviderOptionsForStructuredOutput,
+  ensureJsonModePromptCompatibility,
   annotateModelsWithStructuredOutputSupport,
   GROQ_STRUCTURED_OUTPUT_MODEL_IDS: [...GROQ_STRUCTURED_OUTPUT_MODEL_IDS],
 };
