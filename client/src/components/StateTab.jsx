@@ -14,9 +14,12 @@ export default function StateTab({ session }) {
   const [expandedSections, setExpandedSections] = useState({
     location: true,
     party: true,
+    encounters: true,
     battle: true,
+    choices: true,
+    controls: false,
     inventory: false,
-    flags: false,
+    failSoftFlags: false,
     customPokemon: false,
     discoveredPokemon: false,
     fullJson: false,
@@ -70,6 +73,37 @@ export default function StateTab({ session }) {
     return parsePokemonRef(ref) || null;
   };
 
+  const sessionSummary = useMemo(() => {
+    const characters = session.characters || [];
+    const totalPartyPokemon = characters.reduce(
+      (sum, character) => sum + (character.pokemon_party?.length || 0),
+      0
+    );
+    return {
+      trainers: characters.length,
+      partyPokemon: totalPartyPokemon,
+      encounters: session.session?.encounters?.length || 0,
+      eventLogEntries: session.session?.event_log?.length || 0,
+    };
+  }, [session]);
+
+  const inventoryByTrainer = useMemo(() => {
+    const trainers = session.characters || [];
+    if (trainers.length === 0) {
+      return null;
+    }
+
+    return trainers.map((character) => ({
+      character_id: character.character_id,
+      trainer_name: character.trainer?.name || 'Unknown Trainer',
+      inventory: character.inventory || {
+        items: [],
+        pokeballs: {},
+        key_items: [],
+      },
+    }));
+  }, [session]);
+
   return (
     <div className="space-y-4">
       {/* Search */}
@@ -91,6 +125,13 @@ export default function StateTab({ session }) {
             'placeholder:text-muted'
           )}
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <SummaryTile label="Trainers" value={sessionSummary.trainers} />
+        <SummaryTile label="Party Pokemon" value={sessionSummary.partyPokemon} />
+        <SummaryTile label="Encounters" value={sessionSummary.encounters} />
+        <SummaryTile label="Event Log" value={sessionSummary.eventLogEntries} />
       </div>
 
       {filteredData ? (
@@ -206,6 +247,41 @@ export default function StateTab({ session }) {
               </Section>
             )}
 
+          {/* Encounters Section */}
+          <Section
+            title="Encounters"
+            expanded={expandedSections.encounters}
+            onToggle={() => toggleSection('encounters')}
+          >
+            {session.session?.encounters && session.session.encounters.length > 0 ? (
+              <div className="space-y-3">
+                {[...session.session.encounters].slice(-5).reverse().map((encounter) => (
+                  <div
+                    key={encounter.encounter_id}
+                    className="rounded-lg border border-border/60 bg-background/60 p-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-foreground">
+                        {encounter.type} encounter
+                      </span>
+                      <span className="text-xs text-muted">
+                        {encounter.status} · {encounter.difficulty}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-muted">
+                      Participants: {encounter.participants?.length || 0}
+                    </div>
+                    <div className="text-xs text-muted">
+                      Wild slots: {encounter.wild_slots?.length || 0}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted italic">No encounters recorded yet</div>
+            )}
+          </Section>
+
           {/* Battle State Section */}
           {session.session?.battle_state && (
             <Section
@@ -215,10 +291,21 @@ export default function StateTab({ session }) {
             >
               {session.session.battle_state.active ? (
                 <div className="space-y-2">
-              <div className="text-red-300 font-medium">Battle Active</div>
+                  <div className="text-red-300 font-medium">Battle Active</div>
                   <div className="text-sm text-muted">
                     Round: {session.session.battle_state.round || 0}
                   </div>
+                  <div className="text-xs text-muted">
+                    Encounter ID: {session.session.battle_state.encounter_id || 'Unknown'}
+                  </div>
+                  <div className="text-xs text-muted">
+                    Turn Order Entries: {session.session.battle_state.turn_order?.length || 0}
+                  </div>
+                  {session.session.battle_state.last_action_summary && (
+                    <div className="text-xs text-muted">
+                      {session.session.battle_state.last_action_summary}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-sm text-muted italic">No active battle</div>
@@ -226,29 +313,72 @@ export default function StateTab({ session }) {
             </Section>
           )}
 
+          {/* Player Choices Section */}
+          <Section
+            title="Player Choices"
+            expanded={expandedSections.choices}
+            onToggle={() => toggleSection('choices')}
+          >
+            {session.session?.player_choices?.options_presented &&
+            session.session.player_choices.options_presented.length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-xs text-muted">
+                  Safe default: {session.session.player_choices.safe_default || 'Not set'}
+                </div>
+                {session.session.player_choices.options_presented.map((choice) => (
+                  <div
+                    key={choice.option_id}
+                    className="rounded-lg border border-border/60 bg-background/60 p-2"
+                  >
+                    <div className="text-sm font-medium text-foreground">{choice.label}</div>
+                    <div className="text-xs text-muted mt-1">{choice.description}</div>
+                    <div className="text-[11px] text-muted mt-1">
+                      {choice.option_id} · {choice.risk_level}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted italic">No choices captured yet</div>
+            )}
+          </Section>
+
+          {/* Controls Section */}
+          <Section
+            title="Controls"
+            expanded={expandedSections.controls}
+            onToggle={() => toggleSection('controls')}
+          >
+            {session.session?.controls ? (
+              <JsonViewer data={session.session.controls} />
+            ) : (
+              <div className="text-sm text-muted italic">No control flags set</div>
+            )}
+          </Section>
+
           {/* Inventory Section */}
           <Section
             title="Inventory"
             expanded={expandedSections.inventory}
             onToggle={() => toggleSection('inventory')}
           >
-            {session.session?.inventory && Object.keys(session.session.inventory).length > 0 ? (
-              <JsonViewer data={session.session.inventory} />
+            {inventoryByTrainer ? (
+              <JsonViewer data={inventoryByTrainer} />
             ) : (
               <div className="text-sm text-muted italic">No inventory items</div>
             )}
           </Section>
 
-          {/* Flags Section */}
+          {/* Fail-Soft Flags Section */}
           <Section
-            title="Flags"
-            expanded={expandedSections.flags}
-            onToggle={() => toggleSection('flags')}
+            title="Fail-Soft Flags"
+            expanded={expandedSections.failSoftFlags}
+            onToggle={() => toggleSection('failSoftFlags')}
           >
-            {session.session?.flags && Object.keys(session.session.flags).length > 0 ? (
-              <JsonViewer data={session.session.flags} />
+            {session.session?.fail_soft_flags ? (
+              <JsonViewer data={session.session.fail_soft_flags} />
             ) : (
-              <div className="text-sm text-muted italic">No flags set</div>
+              <div className="text-sm text-muted italic">No fail-soft flags set</div>
             )}
           </Section>
 
@@ -310,6 +440,15 @@ function Section({ title, expanded, onToggle, children }) {
           {children}
         </div>
       )}
+    </div>
+  );
+}
+
+function SummaryTile({ label, value }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-background/50 p-2">
+      <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
+      <div className="text-base font-semibold text-foreground">{value}</div>
     </div>
   );
 }

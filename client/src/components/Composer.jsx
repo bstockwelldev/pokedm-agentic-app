@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 
 /**
@@ -13,29 +13,107 @@ export default function Composer({
   onKeyDown,
   loading,
   disabled,
+  sessionIsEmpty = false,
   className,
   ...props
 }) {
   const canSend = !loading && input.trim() && !disabled;
-  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(sessionIsEmpty);
 
-  // Quick action commands
-  const quickActions = [
-    { command: '/pause', label: 'Pause', description: 'Pause the current scene' },
-    { command: '/skip', label: 'Skip', description: 'Skip to next scene' },
-    { command: '/recap', label: 'Recap', description: 'Get a recap of what happened' },
-    { command: '/hint', label: 'Hint', description: 'Get a hint about what to do' },
-    { command: '/save', label: 'Save', description: 'Save current progress' },
-  ];
+  useEffect(() => {
+    if (sessionIsEmpty) {
+      setShowQuickActions(true);
+    }
+  }, [sessionIsEmpty]);
 
-  const handleQuickAction = (command) => {
-    onInputChange(command + ' ');
+  const quickActions = useMemo(() => {
+    const actions = [
+      {
+        command: '/get-started',
+        chip: '/get-started',
+        label: 'Get Started',
+        description: 'Seed a starter trainer, Pokemon, and first objective',
+        showWhen: 'empty',
+      },
+      {
+        command: '/restart',
+        chip: '/restart',
+        label: 'Restart',
+        description: 'Create a brand-new session',
+      },
+      {
+        command: '/encounter wild',
+        chip: '/encounter wild',
+        label: 'Wild Encounter Test',
+        description: 'Force a wild battle encounter now',
+      },
+      {
+        command: '/encounter trainer',
+        chip: '/encounter trainer',
+        label: 'Trainer Encounter Test',
+        description: 'Force a trainer battle encounter now',
+      },
+      {
+        command: '/hint',
+        chip: '/hint',
+        label: 'Hint',
+        description: 'Get a context-aware hint',
+      },
+      {
+        command: '/recap',
+        chip: '/recap',
+        label: 'Recap',
+        description: 'Summarize session progress so far',
+      },
+      {
+        command: '/pause',
+        chip: '/pause',
+        label: 'Pause',
+        description: 'Pause pacing to ask clarifying questions',
+      },
+      {
+        command: '/skip',
+        chip: '/skip',
+        label: 'Skip',
+        description: 'Skip forward to the next story beat',
+      },
+      {
+        command: '/save',
+        chip: '/save',
+        label: 'Save',
+        description: 'Persist the current session state',
+      },
+      {
+        command: 'Rewrite the last narration with clearer stakes, one concrete objective, and 3 concise options.',
+        chip: '/tune',
+        label: 'Tune Narration',
+        description: 'Request clearer pacing and choice framing',
+      },
+      {
+        command: 'Build the next scene with stronger conflict, one safe fallback path, and a named NPC hook.',
+        chip: '/scenario',
+        label: 'Scenario Boost',
+        description: 'Improve scene tension and progression hooks',
+      },
+    ];
+
+    return actions.filter((action) => {
+      if (action.showWhen === 'empty') {
+        return sessionIsEmpty;
+      }
+      return true;
+    });
+  }, [sessionIsEmpty]);
+
+  const handleQuickAction = (action) => {
+    const value = action.command.endsWith(' ') ? action.command : `${action.command} `;
+    onInputChange(value);
     // Focus the textarea after setting the command
     setTimeout(() => {
       const textarea = document.getElementById('message-input');
       if (textarea) {
         textarea.focus();
-        textarea.setSelectionRange(command.length + 1, command.length + 1);
+        textarea.setSelectionRange(value.length, value.length);
       }
     }, 0);
     setShowQuickActions(false);
@@ -81,12 +159,12 @@ export default function Composer({
         >
           {quickActions.map((action) => (
             <button
-              key={action.command}
+              key={`${action.chip || action.command}-${action.label}`}
               type="button"
-              onClick={() => handleQuickAction(action.command)}
+              onClick={() => handleQuickAction(action)}
               disabled={loading || disabled}
               className={cn(
-                'px-3 py-1.5 text-xs rounded-full',
+                'px-3 py-2 text-xs rounded-full',
                 'bg-background/60 border border-border/60',
                 'text-foreground',
                 'hover:bg-muted/20 hover:border-brand/50',
@@ -97,7 +175,7 @@ export default function Composer({
               )}
               title={action.description}
             >
-              <span className="font-medium text-brand">{action.command}</span>
+              <span className="font-medium text-brand">{action.chip || action.command}</span>
               <span className="ml-1 text-muted group-hover:text-foreground">
                 {action.label}
               </span>

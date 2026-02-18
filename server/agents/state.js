@@ -123,12 +123,13 @@ ${userInput}
 Analyze the request and determine what state updates are needed. Return only the fields that need to be updated, following the session schema exactly.`;
 
   try {
+    const providerOptions = getStateProviderOptions(modelName);
     const result = await generateObject({
       model: await getModel(modelName),
       schema: StateUpdateSchema,
       prompt: fullPrompt,
       maxSteps: config.maxSteps,
-      providerOptions: getProviderOptionsForStructuredOutput(modelName),
+      providerOptions,
     });
 
     // Get updates from structured output
@@ -167,6 +168,20 @@ function buildStateContext(session) {
 }
 
 // parseStateUpdates function removed - now using structured output
+
+function getStateProviderOptions(modelName) {
+  const options = getProviderOptionsForStructuredOutput(modelName);
+  if (typeof modelName === 'string' && modelName.startsWith('groq/')) {
+    return {
+      ...options,
+      groq: {
+        ...(options.groq || {}),
+        structuredOutputs: false,
+      },
+    };
+  }
+  return options;
+}
 
 function mergeStateUpdates(session, updates) {
   // Deep merge updates into session

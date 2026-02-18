@@ -11,7 +11,7 @@ import { getAgentConfig } from '../config/agentConfig.js';
 const IntentSchema = z.object({
   intent: z.enum(['narration', 'roll', 'state', 'lore', 'design']).describe('The classified intent category'),
   confidence: z.number().min(0).max(1).describe('Confidence level of the classification (0-1)'),
-  reasoning: z.string().optional().describe('Brief reasoning for the classification'),
+  reasoning: z.string().nullable().describe('Brief reasoning for the classification'),
 });
 
 /**
