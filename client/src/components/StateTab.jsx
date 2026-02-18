@@ -45,6 +45,50 @@ export default function StateTab({ session }) {
     return null;
   }, [session, searchQuery]);
 
+  const sessionSummary = useMemo(() => {
+    if (!session) {
+      return {
+        trainers: 0,
+        partyPokemon: 0,
+        encounters: 0,
+        eventLogEntries: 0,
+      };
+    }
+
+    const characters = session.characters || [];
+    const totalPartyPokemon = characters.reduce(
+      (sum, character) => sum + (character.pokemon_party?.length || 0),
+      0
+    );
+    return {
+      trainers: characters.length,
+      partyPokemon: totalPartyPokemon,
+      encounters: session.session?.encounters?.length || 0,
+      eventLogEntries: session.session?.event_log?.length || 0,
+    };
+  }, [session]);
+
+  const inventoryByTrainer = useMemo(() => {
+    if (!session) {
+      return null;
+    }
+
+    const trainers = session.characters || [];
+    if (trainers.length === 0) {
+      return null;
+    }
+
+    return trainers.map((character) => ({
+      character_id: character.character_id,
+      trainer_name: character.trainer?.name || 'Unknown Trainer',
+      inventory: character.inventory || {
+        items: [],
+        pokeballs: {},
+        key_items: [],
+      },
+    }));
+  }, [session]);
+
   if (!session) {
     return (
       <div
@@ -72,37 +116,6 @@ export default function StateTab({ session }) {
     const ref = entry?.species_ref?.ref || entry?.species_ref;
     return parsePokemonRef(ref) || null;
   };
-
-  const sessionSummary = useMemo(() => {
-    const characters = session.characters || [];
-    const totalPartyPokemon = characters.reduce(
-      (sum, character) => sum + (character.pokemon_party?.length || 0),
-      0
-    );
-    return {
-      trainers: characters.length,
-      partyPokemon: totalPartyPokemon,
-      encounters: session.session?.encounters?.length || 0,
-      eventLogEntries: session.session?.event_log?.length || 0,
-    };
-  }, [session]);
-
-  const inventoryByTrainer = useMemo(() => {
-    const trainers = session.characters || [];
-    if (trainers.length === 0) {
-      return null;
-    }
-
-    return trainers.map((character) => ({
-      character_id: character.character_id,
-      trainer_name: character.trainer?.name || 'Unknown Trainer',
-      inventory: character.inventory || {
-        items: [],
-        pokeballs: {},
-        key_items: [],
-      },
-    }));
-  }, [session]);
 
   return (
     <div className="space-y-4">
