@@ -96,6 +96,25 @@ export function ensureJsonPromptHint(prompt, modelName) {
 }
 
 /**
+ * Detect known recoverable structured-output parsing failures.
+ * Some provider/SDK combinations can throw TypeErrors during object parsing.
+ * @param {unknown} error
+ * @returns {boolean}
+ */
+export function isRecoverableStructuredOutputError(error) {
+  const message = error?.message || '';
+  if (typeof message !== 'string' || message.length === 0) {
+    return false;
+  }
+
+  return (
+    message.includes("Cannot read properties of undefined (reading 'value')") ||
+    message.includes("Cannot read properties of null (reading 'value')") ||
+    message.includes("response_format")
+  );
+}
+
+/**
  * Annotate a list of models with supportsStructuredOutput (for Groq only)
  * @param {Array<{id: string, name?: string, provider: string}>} models
  * @returns {Array<{id: string, name?: string, provider: string, supportsStructuredOutput?: boolean}>}
@@ -116,6 +135,7 @@ export default {
   getProviderOptionsForStructuredOutput,
   requiresJsonPromptHint,
   ensureJsonPromptHint,
+  isRecoverableStructuredOutputError,
   annotateModelsWithStructuredOutputSupport,
   GROQ_STRUCTURED_OUTPUT_MODEL_IDS: [...GROQ_STRUCTURED_OUTPUT_MODEL_IDS],
 };
