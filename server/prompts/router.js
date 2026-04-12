@@ -22,6 +22,4 @@ Your job is to analyze user input and classify it into one of these categories:
 5. **design** - Custom Pokémon creation requests
    Examples: "Create a Fire-type regional variant of Diglett", "Design a new evolution for Meowth"
 
-Analyze the user input and respond with ONLY the intent category (one word: narration, roll, state, lore, or design).
-
-User input: {userInput}`;
+Analyze the user message and respond with ONLY the intent category (one word: narration, roll, state, lore, or design).`;

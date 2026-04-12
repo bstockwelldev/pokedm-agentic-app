@@ -7,6 +7,7 @@ import {
 } from '../lib/structuredOutputHelper.js';
 import { routerPrompt } from '../prompts/router.js';
 import { getAgentConfig } from '../config/agentConfig.js';
+import logger from '../lib/logger.js';
 
 /**
  * Intent classification schema
@@ -19,30 +20,32 @@ const IntentSchema = z.object({
 
 /**
  * Router Agent
- * Classifies user intent and routes to appropriate agent using structured output
+ * Classifies user intent and routes to appropriate agent using structured output.
+ *
+ * Security note: userInput is passed as a user-role message, not interpolated
+ * into the system prompt, preventing prompt injection via player chat.
  */
 export async function routeIntent(userInput, sessionState, model = null) {
   const config = getAgentConfig('router');
   const modelName = model || config.defaultModel;
-  const prompt = ensureJsonPromptHint(
-    routerPrompt.replace('{userInput}', userInput),
-    modelName
-  );
+
+  // System instructions are static — user content flows in as a separate message.
+  const system = ensureJsonPromptHint(routerPrompt, modelName);
 
   try {
     const result = await generateObject({
       model: await getModel(modelName),
       schema: IntentSchema,
-      prompt,
+      system,
+      messages: [{ role: 'user', content: userInput }],
       maxSteps: config.maxSteps,
       providerOptions: getProviderOptionsForStructuredOutput(modelName),
     });
 
-    // Return the classified intent
     return result.object.intent;
   } catch (error) {
-    console.error('Router Agent error:', error);
-    // Default to narration on error
+    // Intentional fallback: narration is the safest default when classification fails.
+    logger.error('Router Agent error — defaulting to narration', { error: error.message });
     return 'narration';
   }
 }

@@ -32,129 +32,92 @@ const DMAgentResponseSchema = z.object({
   safe_default: z.string().describe('Option ID of the safest default choice'),
 });
 
+// ─── Z1: Top-level orchestrator ──────────────────────────────────────────────
+
 /**
  * DM Agent
- * Handles narration and choices using structured output
+ * Handles narration and choices using structured output.
+ * SN: prepare prompt → generate response → apply encounter backstop → persist state → return.
  */
 export async function runDMAgent(userInput, session, model = null) {
+  const { system, userMessage, modelName } = prepareDMPrompt(userInput, session, model);
+
+  const { response, steps } = await generateStructuredDMResponse({
+    modelName,
+    system,
+    userMessage,
+    maxSteps: getAgentConfig('dm').maxSteps,
+    session,
+    userInput,
+  });
+
+  const { narration, choices, safeDefault, encounterState } = applyEncounterBackstop(
+    response, session, userInput
+  );
+
+  const updatedSession = persistDMSessionState(session, narration, choices, safeDefault, encounterState);
+
+  return { narration, choices, steps, updatedSession };
+}
+
+// ─── Z2: Mid-level orchestration ─────────────────────────────────────────────
+
+/**
+ * Assembles the system prompt and user message for the DM agent.
+ * Security: user input stays in the messages array, not the system string.
+ */
+function prepareDMPrompt(userInput, session, model) {
   const config = getAgentConfig('dm');
   const modelName = model || config.defaultModel;
-
-  // Build context from session state
   const context = buildDMContext(session);
+  const systemPrompt = `${dmPrompt}\n\n## Current Session Context\n\n${context}`;
+  const system = ensureJsonPromptHint(systemPrompt, modelName);
+  const userMessage = `${userInput}\n\nProvide narration and 2-4 choices for the players.`;
+  return { system, userMessage, modelName };
+}
 
-  const fullPrompt = `${dmPrompt}
+/**
+ * Normalizes LLM response and overlays an encounter if pacing logic requires one.
+ * SN: normalize response → check encounter trigger → overlay encounter if needed.
+ */
+function applyEncounterBackstop(response, session, userInput) {
+  const narration = normalizeNarration(response.narration, userInput);
+  const choices = normalizeGeneratedChoices(response.choices, session);
+  const safeDefault = resolveSafeDefaultOption(response.safe_default, choices);
 
-## Current Session Context
+  if (!shouldStartEncounter({ userInput, narration, session })) {
+    return { narration, choices, safeDefault, encounterState: null };
+  }
 
-${context}
+  const encounterType = detectEncounterType(`${userInput} ${narration}`);
+  const encounterState = createEncounterStateUpdate(session, { encounterType });
+  return {
+    narration: `${narration.trim()}\n\n${encounterState.encounterNarration}`,
+    choices: encounterState.choices,
+    safeDefault: encounterState.safe_default,
+    encounterState,
+  };
+}
 
-## User Input
-
-${userInput}
-
-Provide narration and 2-4 choices for the players.`;
-  const prompt = ensureJsonPromptHint(fullPrompt, modelName);
-
+/**
+ * Writes the session state update; returns null on failure rather than throwing.
+ * SN: build updates patch → write to store → handle failure gracefully.
+ */
+function persistDMSessionState(session, narration, choices, safeDefault, encounterState) {
+  if (choices.length === 0) return null;
   try {
-    const { response, steps } = await generateStructuredDMResponse({
-      modelName,
-      prompt,
-      maxSteps: config.maxSteps,
-      session,
-      userInput,
-    });
-
-    const generatedChoices = normalizeGeneratedChoices(response.choices, session);
-    let finalNarration = normalizeNarration(response.narration, userInput);
-    let finalChoices = generatedChoices;
-    let finalSafeDefault = resolveSafeDefaultOption(response.safe_default, finalChoices);
-    let encounterState = null;
-
-    // Backstop for encounter pacing: trigger a concrete encounter when appropriate.
-    if (shouldStartEncounter({ userInput, narration: finalNarration, session })) {
-      const encounterType = detectEncounterType(`${userInput} ${finalNarration}`);
-      encounterState = createEncounterStateUpdate(session, { encounterType });
-      finalNarration = `${finalNarration.trim()}\n\n${encounterState.encounterNarration}`;
-      finalChoices = encounterState.choices;
-      finalSafeDefault = encounterState.safe_default;
-    }
-
-    // Update session state with presented choices and continuity tracking
-    let updatedSession = null;
-    if (finalChoices.length > 0) {
-      try {
-        // Determine if this is a significant event that should be tracked
-        const isSignificantEvent = detectSignificantEvent(finalNarration, session);
-        const eventLogEntries = buildBaseEventLogEntries(finalNarration, finalChoices, finalSafeDefault);
-
-        if (encounterState) {
-          eventLogEntries.push(...encounterState.eventLogEntries);
-        }
-
-        const updates = {
-          session: {
-            player_choices: {
-              options_presented: finalChoices,
-              safe_default: finalSafeDefault,
-            },
-            scene: {
-              description: summarizeSceneDescription(finalNarration),
-              mood: encounterState ? 'tense' : inferSceneMood(finalNarration),
-            },
-            event_log: appendEventLogEntries(session.session?.event_log || [], eventLogEntries),
-          },
-        };
-
-        if (encounterState) {
-          updates.session.encounters = [...(session.session?.encounters || []), encounterState.encounter];
-          updates.session.battle_state = encounterState.battleState;
-        }
-
-        // Add continuity tracking for significant events
-        if (isSignificantEvent) {
-          updates.continuity = {
-            timeline: [
-              ...(session.continuity?.timeline || []),
-              {
-                session_id: session.session.session_id,
-                episode_title: session.session.episode_title || 'Untitled Episode',
-                summary: extractEventSummary(finalNarration),
-                canonized: false,
-                date: new Date().toISOString(),
-                tags: extractEventTags(finalNarration),
-              },
-            ],
-            unresolved_hooks: updateUnresolvedHooks(
-              session.continuity?.unresolved_hooks || [],
-              finalNarration,
-              session.session.session_id
-            ),
-          };
-        }
-
-        updatedSession = updateSessionState(session, updates);
-      } catch (error) {
-        logger.warn('Failed to update session state with choices', { error: error.message, stack: error.stack });
-        // Continue without state update
-      }
-    }
-
-    return {
-      narration: finalNarration,
-      choices: finalChoices,
-      steps,
-      updatedSession: updatedSession,
-    };
+    const updates = buildSessionStateUpdates(session, narration, choices, safeDefault, encounterState);
+    return updateSessionState(session, updates);
   } catch (error) {
-    logger.error('DM Agent error', { error: error.message, stack: error.stack });
-    throw error;
+    logger.warn('Failed to update session state', { error: error.message, stack: error.stack });
+    return null;
   }
 }
 
 async function generateStructuredDMResponse({
   modelName,
-  prompt,
+  system,
+  userMessage,
   maxSteps,
   session,
   userInput,
@@ -163,7 +126,8 @@ async function generateStructuredDMResponse({
     const result = await generateObject({
       model: await getModel(modelName),
       schema: DMAgentResponseSchema,
-      prompt,
+      system,
+      messages: [{ role: 'user', content: userMessage }],
       maxSteps,
       providerOptions: getProviderOptionsForStructuredOutput(modelName),
     });
@@ -183,7 +147,8 @@ async function generateStructuredDMResponse({
     });
     return generateFallbackDMResponse({
       modelName,
-      prompt,
+      system,
+      userMessage,
       maxSteps,
       session,
       userInput,
@@ -193,12 +158,13 @@ async function generateStructuredDMResponse({
 
 async function generateFallbackDMResponse({
   modelName,
-  prompt,
+  system,
+  userMessage,
   maxSteps,
   session,
   userInput,
 }) {
-  const fallbackPrompt = `${prompt}
+  const fallbackUserMessage = `${userMessage}
 
 Return a single json object only, with this exact shape:
 {
@@ -211,7 +177,8 @@ Return a single json object only, with this exact shape:
 
   const result = await generateText({
     model: await getModel(modelName),
-    prompt: ensureJsonPromptHint(fallbackPrompt, modelName),
+    system: ensureJsonPromptHint(system, modelName),
+    messages: [{ role: 'user', content: fallbackUserMessage }],
     maxSteps: Math.min(maxSteps, 2),
   });
 
@@ -367,16 +334,81 @@ function buildDMContext(session) {
   return context;
 }
 
-function buildBaseEventLogEntries(narration, choices, safeDefault) {
+// ─── Z3: Pure data assembly helpers ──────────────────────────────────────────
+
+/**
+ * Builds the full session state patch for a DM turn.
+ * Pure function — no I/O; fully testable.
+ */
+function buildSessionStateUpdates(session, narration, choices, safeDefault, encounterState) {
+  const now = new Date().toISOString();
+  const eventLogEntries = buildBaseEventLogEntries(narration, choices, safeDefault, now);
+  if (encounterState) {
+    eventLogEntries.push(...encounterState.eventLogEntries);
+  }
+
+  const updates = {
+    session: {
+      player_choices: { options_presented: choices, safe_default: safeDefault },
+      scene: {
+        description: summarizeSceneDescription(narration),
+        mood: encounterState ? 'tense' : inferSceneMood(narration),
+      },
+      event_log: appendEventLogEntries(session.session?.event_log || [], eventLogEntries),
+    },
+  };
+
+  if (encounterState) {
+    updates.session.encounters = [...(session.session?.encounters || []), encounterState.encounter];
+    updates.session.battle_state = encounterState.battleState;
+  }
+
+  if (detectSignificantEvent(narration, session)) {
+    updates.continuity = buildContinuityUpdate(session, narration, now);
+  }
+
+  return updates;
+}
+
+/**
+ * Builds the continuity patch (timeline entry + hook updates) for significant events.
+ * Pure function — no I/O; fully testable.
+ */
+function buildContinuityUpdate(session, narration, now) {
+  return {
+    timeline: [
+      ...(session.continuity?.timeline || []),
+      {
+        session_id: session.session.session_id,
+        episode_title: session.session.episode_title || 'Untitled Episode',
+        summary: extractEventSummary(narration),
+        canonized: false,
+        date: now,
+        tags: extractEventTags(narration),
+      },
+    ],
+    unresolved_hooks: updateUnresolvedHooks(
+      session.continuity?.unresolved_hooks || [],
+      narration,
+      session.session.session_id
+    ),
+  };
+}
+
+/**
+ * Builds two event log entries (scene + choice) for the current DM turn.
+ * Accepts `now` so both entries share an identical timestamp.
+ */
+function buildBaseEventLogEntries(narration, choices, safeDefault, now = new Date().toISOString()) {
   return [
     {
-      t: new Date().toISOString(),
+      t: now,
       kind: 'scene',
       summary: extractEventSummary(narration),
       details: summarizeSceneDescription(narration),
     },
     {
-      t: new Date().toISOString(),
+      t: now,
       kind: 'choice',
       summary: `Presented ${choices.length} options`,
       details: `Safe default: ${safeDefault}`,
