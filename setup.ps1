@@ -44,13 +44,11 @@ npm install
 if ((Test-Path ".env.example") -and (-not (Test-Path ".env"))) {
     Write-Host "   Copying .env.example to .env..."
     Copy-Item ".env.example" ".env"
-    Write-Host "   ⚠️  Please edit server/.env and set your AI_GATEWAY_API_KEY" -ForegroundColor Yellow
+    Write-Host '   [WARN] Please edit server/.env and set your AI_GATEWAY_API_KEY' -ForegroundColor Yellow
+} elseif (Test-Path ".env") {
+    Write-Host '   [INFO] .env file already exists, skipping copy'
 } else {
-    if (Test-Path ".env") {
-        Write-Host "   ℹ️  .env file already exists, skipping copy"
-    } else {
-        Write-Host "   ⚠️  Warning: .env.example not found, you'll need to create .env manually" -ForegroundColor Yellow
-    }
+    Write-Host '   [WARN] .env.example not found; you will need to create .env manually' -ForegroundColor Yellow
 }
 
 Write-Host "✅ Server setup complete!" -ForegroundColor Green
