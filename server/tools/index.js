@@ -12,7 +12,8 @@ export { fetchPokemon, fetchPokemonSpecies };
 import { fetchMove } from './moves.js';
 import { fetchAbility } from './abilities.js';
 import { fetchType } from './types.js';
-export { fetchMove, fetchAbility, fetchType };
+import { fetchTypeChart, getTypeEffectiveness } from './typeChart.js';
+export { fetchMove, fetchAbility, fetchType, fetchTypeChart, getTypeEffectiveness };
 
 // World tools - Import first, then re-export
 import { fetchEvolutionChain } from './evolution.js';
@@ -35,6 +36,7 @@ export function getPokeAPITools() {
     fetchMove,
     fetchAbility,
     fetchType,
+    fetchTypeChart,
     fetchEvolutionChain,
     fetchGeneration,
     fetchItem,

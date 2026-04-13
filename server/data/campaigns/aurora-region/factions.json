@@ -1,0 +1,27 @@
+{
+  "campaign_id": "aurora-region-v1",
+  "factions": [
+    {
+      "faction_id": "faction_team_permafrost",
+      "name": "Team Permafrost",
+      "philosophy": "The world has grown chaotic and impure. Only by converting all Pokémon to the clarity and permanence of Ice can true order be achieved. The Aurora Shrine holds the key.",
+      "tone": "fanatical",
+      "motivation": "Weaponize the Aurora Shrine's glacial energy to trigger a global forced Ice-type evolution event.",
+      "known_members": [
+        {
+          "npc_id": "npc_permafrost_admin_vale",
+          "role": "admin",
+          "notes": "Commands the eastern outpost. Efficient and ruthless."
+        },
+        {
+          "npc_id": "npc_permafrost_grunt_generic",
+          "role": "grunt",
+          "notes": "Grunts patrol routes and the eastern outpost. Use Ice-type Pokémon."
+        }
+      ],
+      "controlled_locations": ["loc_permafrost_outpost"],
+      "status": "active",
+      "notes": "Team Permafrost leader identity is a late-game reveal. Do not name them until the Aurora Shrine summit."
+    }
+  ]
+}

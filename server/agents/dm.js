@@ -15,6 +15,7 @@ import {
   shouldStartEncounter,
 } from '../services/encounterService.js';
 import logger from '../lib/logger.js';
+import { buildCampaignContext } from '../services/campaignLoader.js';
 
 /**
  * DM Agent Response Schema
@@ -329,6 +330,16 @@ function buildDMContext(session) {
       context += `- ${obj.description} (${obj.status})\n`;
     });
     context += '\n';
+  }
+
+  // Inject campaign config context (STO-26)
+  const campaignId = session.session?.campaign_id ?? session.campaign_id;
+  if (campaignId) {
+    const currentLocationId = session.session?.scene?.location_id;
+    const campaignContext = buildCampaignContext(campaignId, currentLocationId);
+    if (campaignContext) {
+      context += `\n${campaignContext}\n`;
+    }
   }
 
   return context;

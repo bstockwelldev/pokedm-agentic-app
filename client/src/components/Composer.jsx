@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
+import VoiceInput from './VoiceInput';
 
 /**
  * Composer - Input area for user messages
@@ -14,6 +15,7 @@ export default function Composer({
   loading,
   disabled,
   sessionIsEmpty = false,
+  voiceMode = 'toggle',
   className,
   ...props
 }) {
@@ -183,6 +185,23 @@ export default function Composer({
           ))}
         </div>
       )}
+
+      {/* Voice input row */}
+      <div className="mb-2 flex items-center gap-2">
+        <VoiceInput
+          mode={voiceMode}
+          disabled={loading || disabled}
+          onTranscript={(text) => onInputChange(text)}
+          onAutoSubmit={(text) => {
+            onInputChange(text);
+            // Small delay so the input state settles before submit
+            setTimeout(() => onSend?.(), 50);
+          }}
+        />
+        <span className="text-xs text-muted">
+          {voiceMode === 'hold' ? 'Hold to speak' : 'Tap mic to speak'}
+        </span>
+      </div>
 
       <label htmlFor="message-input" className="sr-only">
         Message input

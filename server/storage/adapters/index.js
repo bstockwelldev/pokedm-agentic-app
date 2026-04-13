@@ -115,10 +115,25 @@ export function createAdapter(name) {
 }
 
 /**
- * Get the default adapter based on environment
+ * Get the default adapter based on environment.
+ *
+ * Selection order:
+ *  1. Explicit STORAGE_PROVIDER env var — always wins.
+ *  2. NODE_ENV=production or VERCEL=1 — defaults to 'postgres'.
+ *     ⚠️  Vercel serverless uses /tmp as a fallback when no DATABASE_URL is set,
+ *         but /tmp is ephemeral: sessions are lost between cold starts and across
+ *         function instances. Set DATABASE_URL + STORAGE_PROVIDER=postgres for
+ *         durable production storage.
+ *  3. Otherwise — defaults to 'file' (local development).
+ *
  * @returns {StorageAdapter} Default adapter instance
  */
 export function getDefaultAdapter() {
-  const provider = process.env.STORAGE_PROVIDER || 'file';
-  return createAdapter(provider);
+  const explicit = process.env.STORAGE_PROVIDER;
+  if (explicit) return createAdapter(explicit);
+
+  const isProduction =
+    process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
+
+  return createAdapter(isProduction ? 'postgres' : 'file');
 }

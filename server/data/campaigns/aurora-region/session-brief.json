@@ -1,0 +1,47 @@
+{
+  "campaign_id": "aurora-region-v1",
+  "episode_number": 1,
+  "episode_title": "Arrival at Frostholm",
+  "starting_location_id": "loc_frostholm_south_gate",
+  "scene_setup": "The party arrives at Frostholm's south gate as the aurora begins to appear overhead — green and violet ribbons across a darkening sky. The air is sharp and cold. Professor Glacielle is waiting at the gate, breath fogging in the chill. She waves the party over with visible urgency. Behind her, the warm lights of Frostholm glow against the snow. She hands each trainer a Pokédex and speaks quickly: 'I'm glad you made it. There's something you need to know about this region — and about the Pokémon here — before you go any further. But first, choose your partner. You'll need one before dark.'",
+  "objectives": [
+    {
+      "objective_id": "obj_meet_glacielle",
+      "description": "Meet Professor Glacielle at the south gate",
+      "optional": false
+    },
+    {
+      "objective_id": "obj_choose_starter",
+      "description": "Choose your starter Pokémon from Professor Glacielle",
+      "optional": false
+    },
+    {
+      "objective_id": "obj_explore_frostholm",
+      "description": "Explore Frostholm Town and talk to locals",
+      "optional": true
+    },
+    {
+      "objective_id": "obj_reach_route_1",
+      "description": "Head south to Tundra Route 1 and begin your journey",
+      "optional": false
+    }
+  ],
+  "dm_notes": "This is the opening session. Keep pacing slow and atmospheric. Let players soak in the region's tone. Professor Glacielle should feel warm and welcoming but clearly worried about something. Don't reveal Team Permafrost yet — let them appear as a rumor. The aurora is always visible in the night sky — use it for atmospheric narration. Starter options: Spheal, Snorunt, or Deino (DM discretion based on player preference).",
+  "planned_encounters": [
+    {
+      "encounter_id": "enc_wild_route1_intro",
+      "type": "wild",
+      "location_id": "loc_tundra_route_1",
+      "trigger": "automatic",
+      "notes": "First wild encounter. Use Spheal or Snorunt (lv5-7). Designed to be easy — let players learn the battle system."
+    },
+    {
+      "encounter_id": "enc_rival_sol_intro",
+      "type": "pvp",
+      "location_id": "loc_frostholm_town",
+      "trigger": "player_triggered",
+      "notes": "Optional rival battle. Sol challenges the party after they choose their starter. Use pvp battle type, Sol is defender."
+    }
+  ],
+  "created_at": "2026-04-13T00:00:00.000Z"
+}

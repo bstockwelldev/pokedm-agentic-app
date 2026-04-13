@@ -4,7 +4,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { join, basename } from 'path';
 import { promises as fs } from 'fs';
 import { StorageAdapter, StorageError, registerAdapter } from './index.js';
 import { PokemonSessionSchema } from '../../schemas/session.js';
@@ -79,7 +79,12 @@ export class FileStorageAdapter extends StorageAdapter {
   }
 
   getSessionPath(sessionId) {
-    return join(SESSIONS_DIR, `${sessionId}.json`);
+    // Guard against path traversal — only allow the bare filename, no slashes or ..
+    const safeId = basename(sessionId);
+    if (safeId !== sessionId) {
+      throw new StorageError(`Invalid session ID: "${sessionId}"`, 'INVALID_SESSION_ID');
+    }
+    return join(SESSIONS_DIR, `${safeId}.json`);
   }
 
   async loadSession(sessionId) {

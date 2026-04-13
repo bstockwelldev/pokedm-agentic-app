@@ -3,12 +3,16 @@
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import crypto, { randomUUID } from 'crypto';
 
 // Import logger
 import logger, { Logger } from './lib/logger.js';
 import { fetchPokemonMedia } from './lib/pokemonMedia.js';
+import { resolveModel, classifyAgentError } from './lib/modelUtils.js';
+import { getDefaultAdapter } from './storage/adapters/index.js';
 
 // Import middleware
 import { validateAgentRequest } from './middleware/validateRequest.js';
@@ -27,8 +31,41 @@ logger.debug('Module loading', {
 });
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// Security: helmet sets sensible HTTP headers
+app.use(helmet());
+
+// Security: CORS — restrict to known origins
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim());
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, curl)
+      if (!origin) return callback(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    credentials: true,
+  })
+);
+
+// Security: rate limiting — 60 req/min per IP on all API routes (configurable)
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX || '60', 10),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+app.use('/api', apiLimiter);
+
+app.use(express.json({ limit: '100kb' }));
 
 // Request ID middleware - add unique ID to all requests for traceability
 app.use((req, res, next) => {
@@ -49,8 +86,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Default model
-const DEFAULT_MODEL = process.env.LLM_MODEL || 'groq/llama-3.1-8b-instant';
+// Default model — derived from modelUtils tier resolution (STO-28)
+// resolveModel('dm') reads DM_MODEL env var, then SMART_MODEL, then tier default
+const DEFAULT_MODEL = process.env.LLM_MODEL || resolveModel('dm');
 
 /**
  * Generate a simple recap from session history (fallback)
@@ -693,6 +731,135 @@ app.delete(`${API_V1}/campaigns/:id`, async (req, res) => {
     });
   }
 });
+
+// ── Session Runtime Routes — STO-29 + STO-32 ─────────────────────────────────
+
+/**
+ * POST /api/v1/sessions
+ * Create a new session from a campaign + player roster.
+ * Body: { campaign_id, session_brief_id?, players[] }
+ * Returns: { session_id, dm_opening_narration, session }
+ */
+app.post(`${API_V1}/sessions`, async (req, res) => {
+  try {
+    const { createSession, SessionStartupError } = await import('./services/sessionStartupService.js');
+    const result = await createSession(req.body);
+    res.status(201).json({
+      session_id: result.sessionId,
+      dm_opening_narration: result.dmOpeningNarration,
+      session: result.session,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    const status = error.code === 'CAMPAIGN_NOT_FOUND' ? 404 : 400;
+    req.logger.error('Session creation error', error, { endpoint: `${API_V1}/sessions` });
+    res.status(status).json({
+      error: error.message,
+      code: error.code ?? 'SESSION_CREATE_FAILED',
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * GET /api/v1/sessions/:id
+ * Retrieve full session state.
+ */
+app.get(`${API_V1}/sessions/:id`, async (req, res) => {
+  try {
+    const adapter = getDefaultAdapter();
+    const session = await adapter.getSession(req.params.id);
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session not found',
+        session_id: req.params.id,
+        requestId: req.requestId,
+      });
+    }
+    res.json({ session, requestId: req.requestId, timestamp: new Date().toISOString() });
+  } catch (error) {
+    req.logger.error('Session fetch error', error);
+    res.status(500).json({ error: error.message, requestId: req.requestId });
+  }
+});
+
+/**
+ * POST /api/v1/sessions/:id/activate
+ * Transition session from lobby → active.
+ * STO-32
+ */
+app.post(`${API_V1}/sessions/:id/activate`, async (req, res) => {
+  try {
+    const { activateSession } = await import('./services/sessionStartupService.js');
+    const session = await activateSession(req.params.id);
+    res.json({ session, requestId: req.requestId, timestamp: new Date().toISOString() });
+  } catch (error) {
+    const status = error.code === 'SESSION_NOT_FOUND' ? 404 : 500;
+    req.logger.error('Session activate error', error);
+    res.status(status).json({ error: error.message, requestId: req.requestId });
+  }
+});
+
+/**
+ * POST /api/v1/sessions/:id/pass-turn
+ * Rotate active trainer (local multiplayer).
+ * Body: { to_trainer_id? }  — if omitted, cycles to next in turn order
+ * STO-29
+ */
+app.post(`${API_V1}/sessions/:id/pass-turn`, async (req, res) => {
+  try {
+    const { passSessionTurn } = await import('./services/sessionStartupService.js');
+    const session = await passSessionTurn(req.params.id, req.body?.to_trainer_id);
+    res.json({
+      active_trainer_id: session.multiplayer?.active_trainer_id,
+      players: session.multiplayer?.players,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    const status = error.code === 'SESSION_NOT_FOUND' ? 404
+      : error.code === 'INVALID_TRAINER' ? 400 : 500;
+    req.logger.error('Pass turn error', error);
+    res.status(status).json({ error: error.message, requestId: req.requestId });
+  }
+});
+
+// ── Image Generation Route — STO-36 ───────────────────────────────────────────
+
+/**
+ * POST /api/v1/image
+ * Generate a DALL-E 3 image for a narrative moment.
+ * Body: { subject: string, style: 'scene'|'pokemon'|'portrait', session_id?: string }
+ * Returns: { url, revisedPrompt, sessionImagesUsed }
+ * Rate-limited per session via IMAGE_LIMIT_PER_SESSION env var (default 5).
+ */
+app.post(`${API_V1}/image`, async (req, res) => {
+  try {
+    const { generateImage } = await import('./tools/generateImage.js');
+    const { subject, style = 'scene', session_id } = req.body ?? {};
+
+    if (!subject || typeof subject !== 'string') {
+      return res.status(400).json({ error: 'subject is required', requestId: req.requestId });
+    }
+
+    const result = await generateImage({ subject, style, sessionId: session_id });
+    res.json({ ...result, requestId: req.requestId, timestamp: new Date().toISOString() });
+  } catch (error) {
+    const isLimit = error.message?.includes('limit reached');
+    req.logger.warn('Image generation error', { error: error.message });
+    res.status(isLimit ? 429 : 500).json({
+      error: error.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// ── End Image Generation Route ─────────────────────────────────────────────────
+
+// ── End Session Runtime Routes ─────────────────────────────────────────────────
 
 // Catch-all for undefined routes - return JSON (must be after all routes)
 // Catch-all for unmatched routes (for debugging)

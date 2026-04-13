@@ -85,7 +85,12 @@ export function validateParams(schema) {
  */
 export function validateAgentRequest(req, res, next) {
   const AgentRequestSchema = z.object({
-    userInput: z.string().min(1).max(10000),
+    // Security: max 2000 chars; strip ASCII control characters (except tab/newline/CR)
+    userInput: z
+      .string()
+      .min(1)
+      .max(2000)
+      .transform((s) => s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')),
     sessionId: z.string().uuid().optional(),
     model: z.string().optional(),
     campaignId: z.string().uuid().optional(),

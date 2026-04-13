@@ -1,0 +1,158 @@
+{
+  "campaign_id": "aurora-region-v1",
+  "region": {
+    "name": "Aurora Region",
+    "theme": "Subarctic wilderness — glaciers, frozen lakes, aurora-lit tundra",
+    "description": "A remote northern region shaped by ancient glaciers. Pokémon here evolved unusual Ice and Dragon hybrid traits over millennia of cold isolation. The region is dotted with ruined research stations, small tundra villages, and one major city — Frostholm. The Aurora Shrine at the region's peak is said to be where the glacial energy that shaped the region's unique Pokémon originates.",
+    "environment_tags": ["ice", "tundra", "glacier", "aurora", "ruins", "subarctic"],
+    "climate": "Subarctic. Permanent snow cover outside towns. Blizzards common on mountain routes. Short summers with aurora-visible nights year-round.",
+    "starting_location_id": "loc_frostholm_south_gate"
+  },
+  "locations": [
+    {
+      "location_id": "loc_frostholm_south_gate",
+      "name": "Frostholm — South Gate",
+      "type": "town",
+      "description": "The main gate into Frostholm, Aurora Region's largest settlement. Warm lanterns line the frozen cobblestone path. Professor Glacielle's research lab is visible just past the gate.",
+      "connections": ["loc_frostholm_town", "loc_tundra_route_1"],
+      "known_by_default": true,
+      "notes": "Session starting point. Professor Glacielle meets the party here."
+    },
+    {
+      "location_id": "loc_frostholm_town",
+      "name": "Frostholm Town",
+      "type": "town",
+      "description": "A tight-knit subarctic town of wood and stone. Home to the Frostholm Pokémon Center, a small market, and Professor Glacielle's lab. The Ice Gym is at the north end of town.",
+      "connections": ["loc_frostholm_south_gate", "loc_frostholm_gym", "loc_frostholm_lab", "loc_tundra_route_2"],
+      "known_by_default": true
+    },
+    {
+      "location_id": "loc_frostholm_lab",
+      "name": "Professor Glacielle's Lab",
+      "type": "landmark",
+      "description": "A cluttered but warm research facility specializing in regional variant Pokémon. Walls lined with specimens of Glacial Gyarados scales and Aurora Milotic fin-prints. The Professor is obsessed with the Aurora Shrine.",
+      "connections": ["loc_frostholm_town"],
+      "known_by_default": true
+    },
+    {
+      "location_id": "loc_frostholm_gym",
+      "name": "Frostholm Ice Gym",
+      "type": "gym",
+      "description": "A glacial arena carved into the bedrock beneath Frostholm. The floor is slick ice. Gym Leader Kira specializes in Ice types and her signature Glacial Gyarados.",
+      "connections": ["loc_frostholm_town"],
+      "known_by_default": true,
+      "level_range": { "min": 12, "max": 18 }
+    },
+    {
+      "location_id": "loc_tundra_route_1",
+      "name": "Tundra Route 1",
+      "type": "route",
+      "description": "A wind-swept frozen path south of Frostholm. Wild Spheal, Snorunt, and the occasional Glacial Gyarados sighting in the frozen river beside the route.",
+      "connections": ["loc_frostholm_south_gate", "loc_glacial_lake"],
+      "known_by_default": true,
+      "level_range": { "min": 5, "max": 12 }
+    },
+    {
+      "location_id": "loc_glacial_lake",
+      "name": "Glacial Lake Boreas",
+      "type": "wilderness",
+      "description": "A vast frozen lake split by cracking ice. Rare Aurora Milotic have been spotted in the deep unfrozen center. Team Permafrost has set up a hidden base on the eastern shore.",
+      "connections": ["loc_tundra_route_1", "loc_permafrost_outpost"],
+      "known_by_default": false,
+      "level_range": { "min": 15, "max": 25 }
+    },
+    {
+      "location_id": "loc_tundra_route_2",
+      "name": "Tundra Route 2 — Frost Passage",
+      "type": "route",
+      "description": "A narrow mountain path north of Frostholm. Frost Arcanine packs patrol this route — they're territorial but rarely hostile unless provoked. Dragon types begin appearing in the higher elevations.",
+      "connections": ["loc_frostholm_town", "loc_aurora_shrine_base"],
+      "known_by_default": false,
+      "level_range": { "min": 20, "max": 35 }
+    },
+    {
+      "location_id": "loc_aurora_shrine_base",
+      "name": "Aurora Shrine — Base Camp",
+      "type": "landmark",
+      "description": "The frozen approach to the Aurora Shrine. Ancient carved pillars line the path. Team Permafrost guards have been spotted here recently.",
+      "connections": ["loc_tundra_route_2", "loc_aurora_shrine_summit"],
+      "known_by_default": false,
+      "level_range": { "min": 35, "max": 45 }
+    },
+    {
+      "location_id": "loc_aurora_shrine_summit",
+      "name": "Aurora Shrine — Summit",
+      "type": "landmark",
+      "description": "The heart of the region's glacial energy. A massive crystalline structure pulses with cold light. This is where Glaceon-Prime was first documented — and where Team Permafrost's leader plans to channel the shrine's power.",
+      "connections": ["loc_aurora_shrine_base"],
+      "known_by_default": false,
+      "level_range": { "min": 45, "max": 55 }
+    },
+    {
+      "location_id": "loc_permafrost_outpost",
+      "name": "Team Permafrost Eastern Outpost",
+      "type": "dungeon",
+      "description": "A camouflaged research facility on the eastern shore of Glacial Lake Boreas. Team Permafrost Grunts patrol in pairs. Contains stolen research from Professor Glacielle's lab.",
+      "connections": ["loc_glacial_lake"],
+      "known_by_default": false,
+      "level_range": { "min": 18, "max": 28 }
+    }
+  ],
+  "world_facts": [
+    {
+      "fact_id": "fact_glacial_energy",
+      "title": "Glacial Energy",
+      "description": "A mysterious energy radiating from the Aurora Shrine that has influenced the evolution of Pokémon in the region over thousands of years. It manifests as cold blue-white light visible in the aurora.",
+      "tags": ["lore", "shrine", "evolution"],
+      "revealed_by_default": true
+    },
+    {
+      "fact_id": "fact_custom_forms_origin",
+      "title": "Regional Form Origins",
+      "description": "The regional variants of the Aurora Region (Glacial Gyarados, Aurora Milotic, Frost Arcanine) are the result of prolonged exposure to glacial energy over generations. They're considered sacred by the indigenous communities of Frostholm.",
+      "tags": ["lore", "custom-forms", "culture"],
+      "revealed_by_default": false
+    },
+    {
+      "fact_id": "fact_team_permafrost_goal",
+      "title": "Team Permafrost's True Goal",
+      "description": "Team Permafrost believes that if they can concentrate and weaponize glacial energy from the Aurora Shrine, they can trigger a region-wide evolutionary event — forcibly transforming Pokémon across the world into Ice types. They believe this will 'purify' the world.",
+      "tags": ["antagonist", "team-permafrost", "plot"],
+      "revealed_by_default": false
+    }
+  ],
+  "recurring_npcs": [
+    {
+      "npc_id": "npc_prof_glacielle",
+      "name": "Professor Glacielle",
+      "role": "researcher",
+      "disposition": "friendly",
+      "home_location_id": "loc_frostholm_lab",
+      "notes": "Regional variant specialist. Gives the party their starter Pokémon and a Pokédex. Secretly worried about Team Permafrost's interest in her research."
+    },
+    {
+      "npc_id": "npc_gym_leader_kira",
+      "name": "Kira",
+      "role": "gym_leader",
+      "disposition": "neutral",
+      "home_location_id": "loc_frostholm_gym",
+      "notes": "Frostholm Gym Leader. Stoic, tests trainers with brutal efficiency. Signature Pokémon: Glacial Gyarados. Warms up to trainers who earn her respect."
+    },
+    {
+      "npc_id": "npc_rival_sol",
+      "name": "Sol",
+      "role": "rival",
+      "disposition": "tense",
+      "home_location_id": "loc_frostholm_town",
+      "notes": "The player's rival. Also studying under Professor Glacielle. Chose Fire types to deliberately contrast the region. Competitive but not malicious."
+    },
+    {
+      "npc_id": "npc_permafrost_admin_vale",
+      "name": "Vale",
+      "role": "antagonist",
+      "disposition": "hostile",
+      "faction_id": "faction_team_permafrost",
+      "notes": "Team Permafrost Admin. Calm, analytical, dangerous. Commands the eastern outpost. Signature Pokémon: Glaceon-Prime (stolen from the shrine research)."
+    }
+  ]
+}

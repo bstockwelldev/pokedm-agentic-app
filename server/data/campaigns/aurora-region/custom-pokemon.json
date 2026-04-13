@@ -1,0 +1,214 @@
+{
+  "_meta": {
+    "campaign_id": "aurora-region-v1",
+    "description": "Custom Pokémon forms unique to the Aurora Region. Loaded by the override layer (STO-22) at session start. Transparent to the battle engine — PokeAPI base stats are used as the foundation, then type/ability/signature-move overrides are applied.",
+    "override_rules": "For each entry: typing, ability, and signature_move replace the canon equivalents. All other base stats, learnset, and evolution methods use PokeAPI data for the base_canon_ref species unless explicitly overridden here."
+  },
+  "pokemon": {
+    "cstm_glacial_gyarados": {
+      "custom_species_id": "cstm_glacial_gyarados",
+      "display_name": "Glacial Gyarados",
+      "classification": "regional_variant",
+      "resembles": {
+        "base_canon_ref": "gyarados",
+        "note": "Retains Gyarados's base stats and general learnset. Typing changed from Water/Flying to Ice/Dragon."
+      },
+      "concept": "An ancient lineage of Gyarados that evolved in the Aurora Region's glacial lakes. Its scales shimmer with ice-crystal patterns and its roar sends shockwaves through frozen terrain.",
+      "typing": ["ice", "dragon"],
+      "lore": "Glacial Gyarados were once considered myths by outsiders. Locals of Frostholm have known of them for generations, treating them as guardians of the frozen lakes. Their Ice/Dragon typing makes them exceptionally powerful — and exceptionally dangerous. Gym Leader Kira's Glacial Gyarados is the most famous specimen in the region.",
+      "design_hooks": [
+        "Scales are pale blue-white with crystalline edges",
+        "Eyes glow faint violet — remnant of the glacial energy",
+        "Breath produces visible ice crystals, not water vapor",
+        "Roars crack lake ice in a radius around it"
+      ],
+      "ability": {
+        "name": "Glacial Presence",
+        "description": "Summons Hail upon entering battle. While Hail is active, this Pokémon's Ice-type moves deal 10% additional damage."
+      },
+      "stat_overrides": {
+        "note": "Base stats identical to canon Gyarados (540 total). Type changes only."
+      },
+      "signature_move": {
+        "name": "Aurora Surge",
+        "type": "ice",
+        "category": "special",
+        "pp": 10,
+        "accuracy": 90,
+        "power": 110,
+        "simple_effect": "Launches a concentrated beam of glacial energy. 20% chance to freeze the target. In Hail, accuracy becomes 100%."
+      },
+      "learnset_simplified": [
+        "aurora_surge", "ice_beam", "dragon_dance", "outrage",
+        "crunch", "waterfall", "blizzard", "earthquake",
+        "iron_head", "thunder_wave"
+      ],
+      "evolution": {
+        "kind": "evolves_from",
+        "notes": "Evolves from Magikarp caught or raised in Aurora Region glacial waters (same method as canon). Regional Magikarp have subtle blue-tinted scales.",
+        "from_ref": { "kind": "canon", "ref": "magikarp" }
+      },
+      "introduced_in": {
+        "campaign_id": "aurora-region-v1",
+        "first_seen_location_id": "loc_frostholm_gym",
+        "first_seen_session_id": "session_seed"
+      }
+    },
+    "cstm_aurora_milotic": {
+      "custom_species_id": "cstm_aurora_milotic",
+      "display_name": "Aurora Milotic",
+      "classification": "regional_variant",
+      "resembles": {
+        "base_canon_ref": "milotic",
+        "note": "Retains Milotic's base stats and general learnset. Typing changed from Water to Water/Fairy."
+      },
+      "concept": "Milotic that evolved in the aurora-lit deep waters of Glacial Lake Boreas. Their scales refract the aurora's light into prismatic displays. Said to calm even the most violent Pokémon with their presence.",
+      "typing": ["water", "fairy"],
+      "lore": "Aurora Milotic are exceptionally rare — sighted only in the deep unfrozen center of Glacial Lake Boreas. Their Water/Fairy typing and serene demeanor make them objects of reverence. Team Permafrost covets them for their connection to glacial energy. Legend says an Aurora Milotic prophesied the coming of trainers worthy of stopping Team Permafrost.",
+      "design_hooks": [
+        "Scales shift color with the aurora — green to violet to pink",
+        "Eyes are deep silver with a soft inner glow",
+        "A faint music-like hum emanates when calm",
+        "Presence reduces weather severity (Hail/Sandstorm reduced to 1-turn duration)"
+      ],
+      "ability": {
+        "name": "Aurora Veil",
+        "description": "Passive: Reduces damage from supereffective hits by 25% while HP is above 50%. This is an innate ability, not the learnable move."
+      },
+      "stat_overrides": {
+        "note": "Base stats identical to canon Milotic (540 total). Type changes only."
+      },
+      "signature_move": {
+        "name": "Prismatic Mist",
+        "type": "fairy",
+        "category": "special",
+        "pp": 15,
+        "accuracy": 95,
+        "power": 85,
+        "simple_effect": "Releases aurora-light in a pulse. Hits all opponents in doubles. 30% chance to lower Special Defense by 1 stage. Bypasses Hail accuracy penalty."
+      },
+      "learnset_simplified": [
+        "prismatic_mist", "moonblast", "surf", "ice_beam",
+        "recover", "charm", "dazzling_gleam", "dragon_tail",
+        "scald", "mirror_coat"
+      ],
+      "evolution": {
+        "kind": "evolves_from",
+        "notes": "Evolves from Feebas found in Glacial Lake Boreas using a Prism Scale (regional key item) while leveled up with high friendship — same method as canon Milotic evolution.",
+        "from_ref": { "kind": "canon", "ref": "feebas" }
+      },
+      "introduced_in": {
+        "campaign_id": "aurora-region-v1",
+        "first_seen_location_id": "loc_glacial_lake",
+        "first_seen_session_id": "session_seed"
+      }
+    },
+    "cstm_frost_arcanine": {
+      "custom_species_id": "cstm_frost_arcanine",
+      "display_name": "Frost Arcanine",
+      "classification": "regional_variant",
+      "resembles": {
+        "base_canon_ref": "arcanine",
+        "note": "Retains Arcanine's base stats and general learnset. Typing changed from Fire to Ice/Normal."
+      },
+      "concept": "Arcanine that adapted to the Aurora Region's extreme cold over generations. Their 'flames' became icy aura. They run in packs across Tundra Route 2, leaving frost trails.",
+      "typing": ["ice", "normal"],
+      "lore": "Frost Arcanine are territorial but not aggressive unless provoked. Pack leaders are identifiable by their larger size and deeper blue-white fur. Locals of Frostholm leave dried fish at the Route 2 pass as tribute — a tradition that keeps the packs calm. Their speed rivals the original Arcanine.",
+      "design_hooks": [
+        "Fur is pale blue-white with dark grey stripe markings",
+        "The 'flame' on their body is a cold blue-white aura frost",
+        "Paw prints leave frost patterns on surfaces",
+        "Howl is pitched lower than Arcanine — resonates with a cold echo"
+      ],
+      "ability": {
+        "name": "Snow Cloak",
+        "description": "Evasiveness rises in Hail. Also negates Hail damage to this Pokémon. (Standard canon ability, but core to their playstyle.)"
+      },
+      "stat_overrides": {
+        "note": "Base stats identical to canon Arcanine (555 total). Type changes only."
+      },
+      "signature_move": {
+        "name": "Blizzard Sprint",
+        "type": "ice",
+        "category": "physical",
+        "pp": 10,
+        "accuracy": 100,
+        "power": 90,
+        "simple_effect": "Charges with ice-aura speed. Always goes first (priority +1). Deals Physical damage using Speed instead of Attack (battle engine uses max(attack, speed) for this move)."
+      },
+      "learnset_simplified": [
+        "blizzard_sprint", "ice_fang", "extreme_speed", "crunch",
+        "blizzard", "ice_beam", "close_combat", "wild_charge",
+        "roar", "bulldoze"
+      ],
+      "evolution": {
+        "kind": "evolves_from",
+        "notes": "Evolves from Growlithe found in Aurora Region using an Ice Stone (replaces Fire Stone requirement for this regional variant).",
+        "from_ref": { "kind": "canon", "ref": "growlithe" }
+      },
+      "introduced_in": {
+        "campaign_id": "aurora-region-v1",
+        "first_seen_location_id": "loc_tundra_route_2",
+        "first_seen_session_id": "session_seed"
+      }
+    },
+    "cstm_glaceon_prime": {
+      "custom_species_id": "cstm_glaceon_prime",
+      "display_name": "Glaceon-Prime",
+      "classification": "regional_evolution",
+      "resembles": {
+        "base_canon_ref": "glaceon",
+        "note": "A further evolution unique to the Aurora Region, accessible only via the glacial energy near the Aurora Shrine. Significantly stronger than canon Glaceon."
+      },
+      "concept": "A Glaceon that underwent a second evolution after prolonged exposure to the Aurora Shrine's concentrated glacial energy. Crystalline shards form a crown-like structure around its head. The pinnacle of Ice-type evolution in the Aurora Region.",
+      "typing": ["ice", "psychic"],
+      "lore": "Only one confirmed Glaceon-Prime exists: the specimen under the command of Team Permafrost Admin Vale. It was the discovery of Glaceon-Prime's evolution at the shrine that convinced Team Permafrost's leader the shrine could transform any Pokémon. Professor Glacielle believes Glaceon-Prime evolves naturally near the shrine — and that forcing the process is dangerously unstable.",
+      "design_hooks": [
+        "Taller and more angular than Glaceon — almost regal bearing",
+        "Crystal crown of pale blue ice shards, each different shape",
+        "Eyes are solid silver — no visible iris",
+        "Aura visible at all times — cold light emanates from the crystal crown",
+        "Moves with deliberate slowness that makes opponents underestimate it"
+      ],
+      "ability": {
+        "name": "Glacial Mind",
+        "description": "Psychic-type moves deal 1.25× damage. At the end of each turn, if this Pokémon is below 50% HP, it recovers 6.25% of max HP. Signature ability — not present on any canon Pokémon."
+      },
+      "stat_overrides": {
+        "note": "Base stats are elevated beyond canon Glaceon. Treat as BST 580: HP 75, Atk 65, Def 110, SpAtk 140, SpDef 120, Spd 70.",
+        "base_stats": {
+          "hp": 75,
+          "attack": 65,
+          "defense": 110,
+          "special_attack": 140,
+          "special_defense": 120,
+          "speed": 70
+        }
+      },
+      "signature_move": {
+        "name": "Glacial Revelation",
+        "type": "ice",
+        "category": "special",
+        "pp": 5,
+        "accuracy": 85,
+        "power": 150,
+        "simple_effect": "Channels Aurora Shrine energy in a devastating blast. On hit: freezes target for 1 turn (guaranteed). On miss: Glaceon-Prime is confused for 2 turns. Cannot be used twice in a row."
+      },
+      "learnset_simplified": [
+        "glacial_revelation", "psychic", "ice_beam", "shadow_ball",
+        "blizzard", "calm_mind", "recover", "flash_cannon",
+        "freeze_dry", "aura_sphere"
+      ],
+      "evolution": {
+        "kind": "evolves_from",
+        "notes": "Glaceon evolves into Glaceon-Prime when leveled up at the Aurora Shrine summit (loc_aurora_shrine_summit) while holding the Aurora Shard key item. This is a campaign-specific evolution trigger not present in PokeAPI.",
+        "from_ref": { "kind": "canon", "ref": "glaceon" }
+      },
+      "introduced_in": {
+        "campaign_id": "aurora-region-v1",
+        "first_seen_location_id": "loc_permafrost_outpost",
+        "first_seen_session_id": "session_seed"
+      }
+    }
+  }
+}

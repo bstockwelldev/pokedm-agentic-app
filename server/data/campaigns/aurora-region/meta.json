@@ -1,0 +1,13 @@
+{
+  "campaign_id": "aurora-region-v1",
+  "title": "Aurora Region: Glacial Chronicles",
+  "version": "1.0.0",
+  "region_name": "Aurora Region",
+  "tone": "adventure",
+  "age_rating": "all-ages",
+  "max_players": 4,
+  "created_at": "2026-04-13T00:00:00.000Z",
+  "updated_at": "2026-04-13T00:00:00.000Z",
+  "tags": ["ice", "dragon", "mystery", "custom-forms", "evil-team"],
+  "notes": "Seed campaign for PokeDM development. Aurora Region is a subarctic land where rare Ice/Dragon-type Pokémon evolved in isolation. An organization called Team Permafrost seeks to weaponize ancient glacial energy."
+}

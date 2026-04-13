@@ -1,0 +1,44 @@
+{
+  "campaign_id": "aurora-region-v1",
+  "challenges": [
+    {
+      "challenge_id": "gym_frostholm_ice",
+      "type": "gym",
+      "leader_npc_id": "npc_gym_leader_kira",
+      "location_id": "loc_frostholm_gym",
+      "badge_name": "Glacier Badge",
+      "badge_id": "badge_glacier",
+      "speciality_type": "ice",
+      "recommended_level": 15,
+      "level_scale_factor": 1.0,
+      "pre_battle_dialogue": "Kira looks you up and down slowly. 'The Glacier Badge isn't given. It's earned. Show me your resolve, or get off my ice.'",
+      "victory_dialogue": "'...You surprised me. Take the Glacier Badge. You've earned the right to call yourself a trainer in Aurora Region.'",
+      "defeat_dialogue": "'Come back when you're ready. The ice doesn't forgive weakness — neither do I.'",
+      "notes": "Kira's team: Sneasler (lv14), Froslass (lv14), Glacial Gyarados (lv17 signature). Battle engine should scale all three by level_scale_factor relative to party average."
+    },
+    {
+      "challenge_id": "boss_permafrost_outpost",
+      "type": "boss",
+      "leader_npc_id": "npc_permafrost_admin_vale",
+      "location_id": "loc_permafrost_outpost",
+      "reward": "Stolen research documents (key item) + access to Glacial Lake Boreas deep zone",
+      "recommended_level": 22,
+      "level_scale_factor": 1.1,
+      "stages": 2,
+      "pre_battle_dialogue": "Vale closes her notebook without looking up. 'You've made a significant mistake coming here. I'll demonstrate exactly why.' She stands slowly. 'Don't worry — this will be instructive.'",
+      "notes": "Stage 1: Vale's patrol team (Alolan Sandslash lv20, Lapras lv21). Stage 2 (triggered at 50% defeat): Vale releases her personal Pokémon, Glaceon-Prime (lv25). Stage 2 is a full reset of participants."
+    },
+    {
+      "challenge_id": "boss_aurora_shrine_summit",
+      "type": "boss",
+      "leader_npc_id": "npc_permafrost_leader",
+      "location_id": "loc_aurora_shrine_summit",
+      "reward": "Glacial energy dispersed — regional forms stabilized; campaign climax",
+      "recommended_level": 48,
+      "level_scale_factor": 1.15,
+      "stages": 3,
+      "pre_battle_dialogue": "The shrine's light intensifies. 'You've come this far. Then witness what I've built. Witness the future.' The leader steps forward from the light. 'This ends here — one way or another.'",
+      "notes": "Final campaign boss. Three stages. Stage 3 includes a legendary encounter with the region's legendary Ice/Dragon Pokémon (to be defined). DM should narrate the shrine reacting to the battle."
+    }
+  ]
+}
