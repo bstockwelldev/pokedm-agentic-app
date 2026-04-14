@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "Agentic app with server and client",
   "type": "module",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm start --prefix ./server\" \"npm run dev --prefix ./client\"",
+    "start:server": "npm start --prefix ./server",
+    "start:client": "npm run dev --prefix ./client"
+  },
   "dependencies": {
     "@ai-sdk/google": "^3.0.13",
     "@ai-sdk/groq": "^3.0.16",
@@ -11,5 +16,8 @@
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
     "zod": "^3.22.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }

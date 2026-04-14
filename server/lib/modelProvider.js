@@ -34,8 +34,11 @@ export async function getModel(modelName) {
     return groq(groqModelName);
   }
 
-  // Default to Google/Gemini
-  return google(modelName);
+  // Google Gemini — @ai-sdk/google expects model id only (e.g. gemini-2.5-flash), not google/ prefix
+  const geminiModelName = modelName.startsWith('google/')
+    ? modelName.replace(/^google\//, '')
+    : modelName;
+  return google(geminiModelName);
 }
 
 /**
@@ -48,9 +51,12 @@ export function parseModel(modelIdentifier) {
       model: modelIdentifier.replace('groq/', ''),
     };
   }
-  
+
+  const googleId = modelIdentifier.startsWith('google/')
+    ? modelIdentifier.replace(/^google\//, '')
+    : modelIdentifier;
   return {
     provider: 'google',
-    model: modelIdentifier,
+    model: googleId,
   };
 }

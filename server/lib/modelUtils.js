@@ -41,7 +41,7 @@ const AGENT_MODEL_ENV = {
 const TIER_DEFAULTS = {
   fast:   process.env.FAST_MODEL   || 'groq/llama-3.1-8b-instant',
   smart:  process.env.SMART_MODEL  || 'groq/llama-3.3-70b-versatile',
-  vision: process.env.VISION_MODEL || 'google/gemini-2.0-flash',
+  vision: process.env.VISION_MODEL || 'gemini-2.0-flash',
 };
 
 /** Which tier each agent belongs to by default. */

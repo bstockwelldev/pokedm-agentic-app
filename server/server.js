@@ -36,7 +36,10 @@ const app = express();
 app.use(helmet());
 
 // Security: CORS — restrict to known origins
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+const ALLOWED_ORIGINS = (
+  process.env.ALLOWED_ORIGINS ||
+  'http://localhost:3000,http://localhost:5173'
+)
   .split(',')
   .map((o) => o.trim());
 
@@ -729,6 +732,186 @@ app.delete(`${API_V1}/campaigns/:id`, async (req, res) => {
       requestId: req.requestId,
       timestamp: new Date().toISOString(),
     });
+  }
+});
+
+// ── Campaign Sub-resource Routes ──────────────────────────────────────────────
+
+/**
+ * POST /api/v1/campaigns/:id/session-briefs
+ * Save a new session brief JSON file for the given campaign.
+ * Body: SessionBrief object (see SessionBriefComposer schema)
+ * Returns: { brief_id, brief, path }
+ */
+app.post(`${API_V1}/campaigns/:id/session-briefs`, async (req, res) => {
+  try {
+    const campaignId = req.params.id;
+    const brief = req.body;
+
+    if (!brief || !brief.episode_title?.trim()) {
+      return res.status(400).json({
+        error: 'episode_title is required',
+        requestId: req.requestId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const { readFileSync, writeFileSync, existsSync, mkdirSync } = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const campaignDir = path.join(__dirname, '..', 'data', 'campaigns', campaignId);
+
+    if (!existsSync(campaignDir)) {
+      return res.status(404).json({
+        error: `Campaign '${campaignId}' not found`,
+        requestId: req.requestId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const briefsDir = path.join(campaignDir, 'session-briefs');
+    if (!existsSync(briefsDir)) mkdirSync(briefsDir, { recursive: true });
+
+    // Derive a stable brief ID from episode number + slugified title
+    const slug = brief.episode_title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 40);
+    const briefId = `session-${String(brief.episode_number ?? 1).padStart(2, '0')}-${slug}`;
+    const briefPath = path.join(briefsDir, `${briefId}.json`);
+
+    const fullBrief = {
+      ...brief,
+      id: briefId,
+      campaign_id: campaignId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    writeFileSync(briefPath, JSON.stringify(fullBrief, null, 2), 'utf-8');
+
+    req.logger?.info('Session brief saved', { campaignId, briefId });
+
+    res.status(201).json({
+      brief_id: briefId,
+      brief: fullBrief,
+      path: briefPath,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    req.logger?.error('Session brief save error', error, {
+      endpoint: `${API_V1}/campaigns/${req.params.id}/session-briefs`,
+    });
+    res.status(500).json({
+      error: 'Failed to save session brief',
+      details: error.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * GET /api/v1/campaigns/:id/session-briefs
+ * List all session briefs for a campaign.
+ * Returns: { briefs: Array<brief> }
+ */
+app.get(`${API_V1}/campaigns/:id/session-briefs`, async (req, res) => {
+  try {
+    const campaignId = req.params.id;
+    const { existsSync, readdirSync, readFileSync } = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const briefsDir = path.join(__dirname, '..', 'data', 'campaigns', campaignId, 'session-briefs');
+
+    if (!existsSync(briefsDir)) {
+      return res.json({ briefs: [], requestId: req.requestId, timestamp: new Date().toISOString() });
+    }
+
+    const briefs = readdirSync(briefsDir)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => {
+        try {
+          return JSON.parse(readFileSync(`${briefsDir}/${f}`, 'utf-8'));
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0));
+
+    res.json({ briefs, count: briefs.length, requestId: req.requestId, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list session briefs', details: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/campaigns/:id/custom-pokemon
+ * Save a custom Pokémon entry for the given campaign.
+ * Returns: { pokemon_id, pokemon }
+ */
+app.post(`${API_V1}/campaigns/:id/custom-pokemon`, async (req, res) => {
+  try {
+    const campaignId = req.params.id;
+    const pokemon = req.body;
+
+    if (!pokemon?.name?.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+
+    const { existsSync, writeFileSync, mkdirSync } = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const dir = path.join(__dirname, '..', 'data', 'campaigns', campaignId, 'custom-pokemon');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+    const id = pokemon.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+    const full = { ...pokemon, id, campaign_id: campaignId, created_at: new Date().toISOString() };
+    writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(full, null, 2), 'utf-8');
+
+    res.status(201).json({
+      pokemon_id: id,
+      pokemon: full,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save custom Pokémon', details: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/campaigns/:id/custom-pokemon/:pokemonId
+ * Update an existing custom Pokémon.
+ */
+app.put(`${API_V1}/campaigns/:id/custom-pokemon/:pokemonId`, async (req, res) => {
+  try {
+    const { campaignId: id, pokemonId } = { campaignId: req.params.id, pokemonId: req.params.pokemonId };
+    const { existsSync, writeFileSync, readFileSync } = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const filePath = path.join(__dirname, '..', 'data', 'campaigns', id, 'custom-pokemon', `${pokemonId}.json`);
+
+    if (!existsSync(filePath)) return res.status(404).json({ error: 'Custom Pokémon not found' });
+
+    const existing = JSON.parse(readFileSync(filePath, 'utf-8'));
+    const updated = { ...existing, ...req.body, id: pokemonId, campaign_id: id, updated_at: new Date().toISOString() };
+    writeFileSync(filePath, JSON.stringify(updated, null, 2), 'utf-8');
+
+    res.json({ pokemon: updated, requestId: req.requestId, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update custom Pokémon', details: error.message });
   }
 });
 
