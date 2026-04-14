@@ -1,58 +1,40 @@
 {
   "version": 2,
-  "builds": [
+  "framework": null,
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/dist",
+  "installCommand": "cd server && npm install",
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
+  "rewrites": [
+    { "source": "/api/v1/agent/stream", "destination": "/api/stream.js" },
+    { "source": "/api/v1/:path*",        "destination": "/api/v1.js" },
+    { "source": "/api/:path*",           "destination": "/api/agent.js" },
+    { "source": "/(.*)",                 "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "src": "api/agent.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["server/**", "package.json"],
-        "maxLambdaSize": "50mb"
-      }
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
     },
     {
-      "src": "api/models.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["server/**", "package.json"],
-        "maxLambdaSize": "50mb"
-      }
-    },
-    {
-      "src": "api/import.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["server/**", "package.json"],
-        "maxLambdaSize": "50mb"
-      }
-    },
-    {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "source": "/api/v1/agent/stream",
+      "headers": [
+        { "key": "Content-Type", "value": "text/event-stream" },
+        { "key": "Cache-Control", "value": "no-cache" },
+        { "key": "Connection", "value": "keep-alive" },
+        { "key": "X-Accel-Buffering", "value": "no" }
+      ]
     }
   ],
-  "routes": [
-    {
-      "src": "/api/models",
-      "dest": "/api/models.js"
-    },
-    {
-      "src": "/api/import",
-      "dest": "/api/import.js"
-    },
-    {
-      "src": "/api/agent",
-      "dest": "/api/agent.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/agent.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/client/$1"
-    }
-  ]
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

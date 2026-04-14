@@ -1042,6 +1042,126 @@ app.post(`${API_V1}/image`, async (req, res) => {
 
 // ── End Image Generation Route ─────────────────────────────────────────────────
 
+// ── Streaming DM Narration — STO-39 ───────────────────────────────────────────
+
+/**
+ * POST /api/v1/agent/stream
+ *
+ * Streaming DM narration endpoint. Uses Vercel AI SDK streamText so the client
+ * receives tokens as they are generated rather than waiting for the full response.
+ *
+ * The DM is instructed to emit structured text sections rather than JSON:
+ *   <narration>story text here</narration>
+ *   <choices>A) ... | B) ... | C) ...</choices>
+ *   <battle_state>JSON string if battle is active</battle_state>
+ *
+ * The client parses these tags with regex as the stream arrives.
+ * TTS should trigger on stream completion, not per-token.
+ *
+ * Falls back to 400 if session not found; falls back to non-streaming /api/v1/agent
+ * for battle engine calls and session management which don't benefit from streaming.
+ */
+app.post(`${API_V1}/agent/stream`, async (req, res) => {
+  const { session_id, userInput, model: reqModel } = req.body ?? {};
+
+  if (!session_id || !userInput) {
+    return res.status(400).json({
+      error: 'session_id and userInput are required',
+      requestId: req.requestId,
+    });
+  }
+
+  try {
+    const { streamText } = await import('ai');
+    const { getModel } = await import('./lib/modelProvider.js');
+    const adapter = getDefaultAdapter();
+
+    const session = await adapter.loadSession(session_id);
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session not found',
+        session_id,
+        requestId: req.requestId,
+      });
+    }
+
+    // Build DM system prompt (reuse existing prompt builder)
+    const { buildDMSystemPrompt } = await import('./prompts/dm.js');
+    const { buildCampaignContext } = await import('./services/campaignLoader.js');
+
+    const campaignId = session.session?.campaign_id ?? session.campaign_id;
+    const locationId = session.session?.scene?.location_id;
+    const campaignCtx = campaignId ? buildCampaignContext(campaignId, locationId) : null;
+
+    const systemPrompt = [
+      buildDMSystemPrompt(session),
+      campaignCtx ?? '',
+      `\n## Output Format\nRespond using XML-style tags (not JSON). Use this exact structure:\n<narration>Your narrative text here. Be vivid and immersive.</narration>\n<choices>A) Option text | B) Option text | C) Option text</choices>\nIf a battle is active, append:\n<battle_state>{"active":true,"turn":"player"}</battle_state>`,
+    ].filter(Boolean).join('\n\n');
+
+    const modelName = reqModel || resolveModel('dm');
+    const aiModel = getModel(modelName);
+
+    // Set SSE headers before streaming begins
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+
+    const result = await streamText({
+      model: aiModel,
+      system: systemPrompt,
+      messages: [
+        ...(session.history?.slice(-10) ?? []).map((m) => ({
+          role: m.role === 'dm' ? 'assistant' : 'user',
+          content: m.content,
+        })),
+        { role: 'user', content: userInput },
+      ],
+      maxTokens: 1024,
+      onFinish: async ({ text }) => {
+        // Persist the assistant turn to session history after streaming completes
+        try {
+          const updatedSession = {
+            ...session,
+            history: [
+              ...(session.history ?? []),
+              { role: 'user', content: userInput, timestamp: new Date().toISOString() },
+              { role: 'dm', content: text, timestamp: new Date().toISOString() },
+            ].slice(-50), // keep last 50 turns
+          };
+          await adapter.saveSession(session_id, updatedSession);
+        } catch (saveErr) {
+          req.logger.warn('Failed to persist streamed session turn', { error: saveErr.message });
+        }
+      },
+    });
+
+    // Pipe the text stream to the response as Server-Sent Events
+    for await (const chunk of result.textStream) {
+      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+    }
+
+    // Signal stream completion
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (error) {
+    req.logger.error('Streaming DM error', error, { endpoint: `${API_V1}/agent/stream` });
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Streaming failed',
+        details: error.message,
+        requestId: req.requestId,
+      });
+    } else {
+      // Stream already started — send error event and close
+      res.write(`data: ${JSON.stringify({ error: error.message, done: true })}\n\n`);
+      res.end();
+    }
+  }
+});
+
 // ── End Session Runtime Routes ─────────────────────────────────────────────────
 
 // Catch-all for undefined routes - return JSON (must be after all routes)

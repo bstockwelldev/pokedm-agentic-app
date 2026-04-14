@@ -1,167 +1,169 @@
 /**
- * KB Document Integration
- * Loads and structures KB documents following KB_INDEX.md hierarchy
+ * KB Loader — reads Markdown knowledge files from the filesystem.
+ *
+ * Core files live in:      server/kb/knowledge/  and  server/kb/systems/
+ * Campaign overrides live in: data/campaigns/<id>/kb/
+ *
+ * Campaign KB files can override core files by using the same filename.
+ * Example: data/campaigns/kanto-classic/kb/battle-rules.md overrides core.
+ *
+ * Z1: loadKnowledgeBase(campaignDir?)  → { filename: content, ... }
+ * Z2: loadMarkdownDir(dir)             → { filename: content, ... }
+ *     buildKBText(entries, subset?)    → plain text for prompts
+ * Z3: readMarkdownFile(filePath)       → string | null
  */
 
-// KB Rules as structured data (loaded from markdown files)
-// In production, these would be loaded from files, but for now we'll embed key rules
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import { join, basename, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-export const KB_RULES = {
-  version: '1.0.0',
-  hierarchy: [
-    'System Instructions',
-    'KB Index',
-    'Core Design Rules',
-    'Mechanics Rules',
-    'Variant/Evolution Rules',
-    'Templates & Integration Docs',
-    'Reference-Only Documents',
-  ],
-  coreDesign: {
-    title: 'Custom Pokémon Design Rules',
-    status: 'Mandatory',
-    rules: [
-      'All custom Pokémon must remain consistent with Pokémon themes, tone, and mechanics',
-      'Custom Pokémon must never replace or overwrite canon Pokémon data',
-      'Custom Pokémon are treated as in-world regional discoveries or rare phenomena',
-      'All custom Pokémon must be designed to be understandable and approachable for mixed-age groups',
-      'Custom Pokémon should emphasize creativity, environment, and story relevance over power',
-      'No custom Pokémon may introduce mature, frightening, or disturbing concepts',
-      'Custom Pokémon always faint instead of dying',
-      'Each custom Pokémon must have: a clear concept, a simple lore explanation, Pokémon-appropriate typing, at least one recognizable design hook',
-    ],
-  },
-  mechanics: {
-    title: 'Custom Pokémon Mechanics Rules',
-    status: 'Mandatory',
-    rules: [
-      'Custom Pokémon use standard Pokémon mechanics',
-      'Typing must use existing Pokémon types',
-      'Abilities must be simple and explainable in one sentence',
-      'Signature moves must avoid complex effects',
-    ],
-  },
-  regionalVariants: {
-    title: 'Regional Variant Design Rules',
-    status: 'Mandatory when creating regional variants',
-    rules: [
-      'Regional variants must share the same base species as the original Pokémon',
-      'Regional variants may change: typing, abilities, learnable moves, visual theme, behavior and habitat',
-      'Regional variants must retain recognizable traits of the original Pokémon',
-      'Regional variants must be explained by regional environment, culture, or history',
-      'Regional variants may evolve differently than their original forms',
-      'Regional variants must not invalidate the original Pokémon\'s canon form',
-    ],
-  },
-  regionalEvolutions: {
-    title: 'Regional Evolution Rules',
-    status: 'Mandatory when adding new evolutions',
-    rules: [
-      'Regional evolutions are new evolutions exclusive to a specific region',
-      'A regional evolution evolves from either a regional variant or a base Pokémon under regional conditions',
-      'Evolution triggers should be simple and narrative-driven',
-      'Regional evolutions must feel like natural extensions of the base Pokémon',
-      'Trade evolutions should be avoided unless simplified',
-    ],
-  },
-  splitEvolutions: {
-    title: 'Split Evolution Rules',
-    status: 'Optional',
-    rules: [
-      'Split evolutions allow one Pokémon to evolve into multiple forms',
-      'Each evolution path must be distinct and balanced',
-      'Evolution paths may depend on environment, items, or player choice',
-      'No split evolution may be strictly superior to another',
-    ],
-  },
-  convergentSpecies: {
-    title: 'Convergent Species Rules',
-    status: 'Optional, Restricted',
-    rules: [
-      'Convergent species resemble existing Pokémon but are not related',
-      'They must have different names and evolutionary lines',
-      'They exist due to similar environments or ecological roles',
-      'Convergent species must NOT share evolution lines with the Pokémon they resemble',
-    ],
-  },
-  newSpecies: {
-    title: 'New Pokémon Species Rules',
-    status: 'Reference Only - Disabled by Default',
-    rules: [
-      'Creation of entirely new species may be disabled depending on campaign rules',
-      'New species creation is NOT allowed unless ruleset_flags.allow_new_species is true',
-    ],
-  },
-  integration: {
-    title: 'Integration with Session State',
-    status: 'Mandatory',
-    rules: [
-      'Custom Pokémon are stored in session JSON alongside canon Pokémon',
-      'Each custom Pokémon entry must include species, typing, ability, moves, and lore',
-      'Custom Pokémon persist across sessions once discovered',
-      'Custom Pokémon stored in custom_dex.pokemon, never overwriting canon_cache',
-    ],
-  },
-};
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const CORE_DIRS = [
+  join(__dirname, 'knowledge'),
+  join(__dirname, 'systems'),
+];
+
+// ── Z1: Top-level orchestrator ────────────────────────────────────────────────
 
 /**
- * Get KB rules for a specific classification
- * @param {string} classification - Classification type
- * @returns {object} Relevant KB rules
+ * Load the full knowledge base, optionally merging campaign-specific overrides.
+ *
+ * @param {string|null} campaignDir - Absolute path to campaign directory
+ *   (e.g. `server/data/campaigns/kanto-classic`). Pass null for core only.
+ * @returns {{ [filename: string]: string }} Map of filename (no ext) → markdown text
  */
-export function getKBRulesForClassification(classification) {
-  const rules = {
-    core: KB_RULES.coreDesign,
-    mechanics: KB_RULES.mechanics,
-    integration: KB_RULES.integration,
+export async function loadKnowledgeBase(campaignDir = null) {
+  const coreEntries = await loadCoreDirs();
+  const campaignEntries = campaignDir
+    ? await loadMarkdownDir(join(campaignDir, 'kb'))
+    : {};
+
+  // Campaign-level files override core files with the same name
+  return { ...coreEntries, ...campaignEntries };
+}
+
+/**
+ * Get formatted KB text for a given subset of topics, ready to inject into a prompt.
+ *
+ * @param {string|null} campaignDir - Campaign directory for overrides
+ * @param {string[]} [subset] - Array of filenames (no ext) to include; omit for all
+ * @returns {Promise<string>} Formatted markdown text
+ */
+export async function getKBText(campaignDir = null, subset = null) {
+  const entries = await loadKnowledgeBase(campaignDir);
+  return buildKBText(entries, subset);
+}
+
+/**
+ * Get KB rules text for a specific Pokémon classification (backwards-compatible).
+ *
+ * @param {string} classification - e.g. 'regional_variant', 'new_species'
+ * @param {string|null} campaignDir
+ * @returns {Promise<string>}
+ */
+export async function getKBRulesText(classification, campaignDir = null) {
+  const subsetMap = {
+    regional_variant:  ['custom-pokemon-design', 'regional-variants'],
+    regional_evolution: ['custom-pokemon-design', 'regional-variants'],
+    split_evolution:   ['custom-pokemon-design', 'regional-variants'],
+    convergent_species: ['custom-pokemon-design', 'regional-variants'],
+    new_species:       ['custom-pokemon-design', 'regional-variants'],
+    battle:            ['battle-rules', 'status-conditions'],
+    catch:             ['catch-mechanics'],
+    affinity:          ['type-affinity-rules'],
+    progression:       ['trainer-progression'],
   };
 
-  switch (classification) {
-    case 'regional_variant':
-      rules.variant = KB_RULES.regionalVariants;
-      break;
-    case 'regional_evolution':
-      rules.evolution = KB_RULES.regionalEvolutions;
-      break;
-    case 'split_evolution':
-      rules.evolution = KB_RULES.splitEvolutions;
-      break;
-    case 'convergent_species':
-      rules.variant = KB_RULES.convergentSpecies;
-      break;
-    case 'new_species':
-      rules.species = KB_RULES.newSpecies;
-      break;
-  }
+  const subset = subsetMap[classification] ?? null;
+  return getKBText(campaignDir, subset);
+}
 
-  return rules;
+// ── Z2: Coordinators ──────────────────────────────────────────────────────────
+
+/**
+ * Load all core KB directories.
+ * @returns {Promise<{ [filename: string]: string }>}
+ */
+async function loadCoreDirs() {
+  const results = {};
+  for (const dir of CORE_DIRS) {
+    const entries = await loadMarkdownDir(dir);
+    Object.assign(results, entries);
+  }
+  return results;
 }
 
 /**
- * Get formatted KB rules text for prompts
- * @param {string} classification - Classification type
- * @returns {string} Formatted rules text
+ * Load all .md files from a directory.
+ * Returns empty object if directory doesn't exist (safe for optional campaign KB).
+ *
+ * @param {string} dir - Absolute path to directory
+ * @returns {Promise<{ [filename: string]: string }>}
  */
-export function getKBRulesText(classification) {
-  const rules = getKBRulesForClassification(classification);
-  let text = '';
+export async function loadMarkdownDir(dir) {
+  if (!existsSync(dir)) return {};
 
-  text += `# Core Design Rules\n${rules.core.rules.map((r) => `- ${r}`).join('\n')}\n\n`;
-  text += `# Mechanics Rules\n${rules.mechanics.rules.map((r) => `- ${r}`).join('\n')}\n\n`;
+  const files = readdirSync(dir).filter((f) => f.endsWith('.md'));
+  const entries = {};
 
-  if (rules.variant) {
-    text += `# ${rules.variant.title}\n${rules.variant.rules.map((r) => `- ${r}`).join('\n')}\n\n`;
+  for (const file of files) {
+    const key = basename(file, '.md');
+    const content = readMarkdownFile(join(dir, file));
+    if (content !== null) entries[key] = content;
   }
 
-  if (rules.evolution) {
-    text += `# ${rules.evolution.title}\n${rules.evolution.rules.map((r) => `- ${r}`).join('\n')}\n\n`;
-  }
-
-  if (rules.species) {
-    text += `# ${rules.species.title}\n${rules.species.rules.map((r) => `- ${r}`).join('\n')}\n\n`;
-  }
-
-  text += `# Integration Rules\n${rules.integration.rules.map((r) => `- ${r}`).join('\n')}\n`;
-
-  return text;
+  return entries;
 }
+
+/**
+ * Build a single formatted text block from KB entries for prompt injection.
+ *
+ * @param {{ [filename: string]: string }} entries
+ * @param {string[]|null} subset - If provided, only include these keys
+ * @returns {string}
+ */
+export function buildKBText(entries, subset = null) {
+  const keys = subset
+    ? subset.filter((k) => k in entries)
+    : Object.keys(entries);
+
+  return keys
+    .map((k) => entries[k].trim())
+    .join('\n\n---\n\n');
+}
+
+// ── Z3: Pure functions ────────────────────────────────────────────────────────
+
+/**
+ * Read a single markdown file safely.
+ * @param {string} filePath
+ * @returns {string|null}
+ */
+function readMarkdownFile(filePath) {
+  try {
+    return readFileSync(filePath, 'utf-8');
+  } catch {
+    return null;
+  }
+}
+
+// ── Backwards-compat export ───────────────────────────────────────────────────
+// Preserve KB_RULES for any code that imports it directly.
+// Lazily populated on first access.
+let _cachedRules = null;
+
+export async function getKBRulesForClassification(classification) {
+  const text = await getKBRulesText(classification);
+  return { text, classification };
+}
+
+/**
+ * @deprecated Use loadKnowledgeBase() or getKBText() instead.
+ */
+export const KB_RULES = new Proxy({}, {
+  get(_, prop) {
+    console.warn(`[KB] KB_RULES.${String(prop)} is deprecated. Use loadKnowledgeBase() or getKBText().`);
+    return undefined;
+  },
+});
