@@ -245,6 +245,50 @@ export function prepareSessionForImport(components) {
 }
 
 /**
+ * Parse recap export file (.md or .txt)
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+export async function parseRecapImportFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      resolve(event.target.result);
+    };
+
+    reader.onerror = () => {
+      reject(new Error('Failed to read recap file'));
+    };
+
+    reader.readAsText(file);
+  });
+}
+
+/**
+ * Import recap text and attach to session continuity.
+ * @param {string} sessionId
+ * @param {string} recapText
+ * @returns {Promise<object>}
+ */
+export async function importRecapToSession(sessionId, recapText) {
+  const response = await fetch(`/api/v1/sessions/${sessionId}/recap/attach`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ text: recapText }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Recap import failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Import session via API
  * @param {object} importData - Prepared import data
  * @returns {Promise<object>} Import result

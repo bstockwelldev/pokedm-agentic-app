@@ -16,6 +16,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { fetchPokeAPI } from '../tools/pokeapiHelper.js';
+import { resolveCampaignDataDir } from './campaignLoader.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '../data/campaigns');
@@ -29,22 +30,54 @@ const customDexCache = new Map();
  * @returns {object} Map of custom_species_id → custom Pokémon entry
  */
 function loadCustomDex(campaignId) {
-  if (customDexCache.has(campaignId)) return customDexCache.get(campaignId);
+  const resolvedId = resolveCampaignDataDir(campaignId);
+  if (customDexCache.has(resolvedId)) return customDexCache.get(resolvedId);
 
-  const filePath = join(DATA_DIR, campaignId, 'custom-pokemon.json');
+  const filePath = join(DATA_DIR, resolvedId, 'custom-pokemon.json');
   if (!existsSync(filePath)) {
-    customDexCache.set(campaignId, {});
+    customDexCache.set(resolvedId, {});
     return {};
   }
 
   try {
     const { pokemon } = JSON.parse(readFileSync(filePath, 'utf-8'));
-    customDexCache.set(campaignId, pokemon || {});
+    customDexCache.set(resolvedId, pokemon || {});
     return pokemon || {};
   } catch {
-    customDexCache.set(campaignId, {});
+    customDexCache.set(resolvedId, {});
     return {};
   }
+}
+
+/**
+ * Merge campaign custom-pokemon.json entries into a session's custom_dex.pokemon.
+ * Session entries win on key collision. No-op when campaign file is missing.
+ *
+ * @param {object} session
+ * @returns {object} Session with merged custom_dex (new object when merge applied)
+ */
+export function mergeCampaignCustomDex(session) {
+  if (!session?.custom_dex) return session;
+
+  const campaignId =
+    session.session?.campaign_id ?? session.campaign?.campaign_id ?? session.campaign_id;
+  if (!campaignId) return session;
+
+  const campaignPokemon = loadCustomDex(campaignId);
+  if (!campaignPokemon || Object.keys(campaignPokemon).length === 0) {
+    return session;
+  }
+
+  return {
+    ...session,
+    custom_dex: {
+      ...session.custom_dex,
+      pokemon: {
+        ...campaignPokemon,
+        ...session.custom_dex.pokemon,
+      },
+    },
+  };
 }
 
 /**
@@ -166,5 +199,5 @@ function mergeLearnset(canonMoves, customLearnset, signatureMove) {
 
 /** Invalidate the in-process cache for a campaign (call after editing custom-pokemon.json). */
 export function invalidateCustomDexCache(campaignId) {
-  customDexCache.delete(campaignId);
+  customDexCache.delete(resolveCampaignDataDir(campaignId));
 }

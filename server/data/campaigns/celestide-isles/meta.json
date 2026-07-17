@@ -1,0 +1,13 @@
+{
+  "campaign_id": "celestide-isles-v1",
+  "title": "Celestide Isles",
+  "version": "1.0.0",
+  "region_name": "Celestide Isles",
+  "tone": "adventure",
+  "age_rating": "all-ages",
+  "max_players": 4,
+  "created_at": "2026-07-17T00:00:00.000Z",
+  "updated_at": "2026-07-17T00:00:00.000Z",
+  "tags": ["wind", "floating-islands", "team-drift", "family-friendly", "custom-forms"],
+  "notes": "Family-friendly campaign on floating islands held aloft by crystal currents. Travel together, earn Gym badges, stop misguided Team Drift, and complete the regional Pokédex. Resume point: Episode 2 on Route 2 — Southern Approach."
+}

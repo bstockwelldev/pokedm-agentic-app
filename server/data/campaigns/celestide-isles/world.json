@@ -1,0 +1,134 @@
+{
+  "campaign_id": "celestide-isles-v1",
+  "region": {
+    "name": "Celestide Isles",
+    "theme": "Floating islands, wind currents, and gravity crystals — discovery, friendship, and responsible power",
+    "description": "A chain of floating islands held aloft by ancient crystal currents. Each island has its own ecosystem, culture, and Gym challenge. Warm trade winds, glowing night skies, and crystal caverns that alter gravity shape daily life. Trainers travel air routes between islands while learning from mistakes and working as a team.",
+    "environment_tags": ["wind", "floating-islands", "gravity-crystals", "celestial", "family-friendly"],
+    "climate": "Warm trade winds year-round. Strong gusts on exposed routes. Glowing night skies during celestial alignment events.",
+    "starting_location_id": "skysong_harbor"
+  },
+  "locations": [
+    {
+      "location_id": "skysong_harbor",
+      "name": "Skysong Harbor",
+      "type": "town",
+      "description": "A peaceful port town on a low-floating island. Colorful banners drift between buildings during the Wind Festival. Home to Professor Liora's Lab, Windmill Plaza, and the Harbor Market. Airships dock peacefully along the southern docks.",
+      "connections": ["professor_liora_lab", "route_2_southern_approach"],
+      "known_by_default": true,
+      "notes": "Session 1 opening (Wind Festival). Team Drift crystal theft witnessed here. Party met Professor Liora and chose starters."
+    },
+    {
+      "location_id": "professor_liora_lab",
+      "name": "Professor Liora's Lab",
+      "type": "landmark",
+      "description": "A bright research lab overlooking the harbor. Wind-powered instruments hum softly. Professor Liora studies gravity crystals and regional Pokémon variants. Starter Pokémon are distributed here.",
+      "connections": ["skysong_harbor"],
+      "known_by_default": true,
+      "notes": "Valion, Pashion, and El Haddah met here and agreed to travel together."
+    },
+    {
+      "location_id": "route_2_southern_approach",
+      "name": "Route 2 — Southern Approach",
+      "type": "route",
+      "description": "The southern exit from Skysong Harbor. Grassy platforms and gentle updrafts mark the path toward Breeze Path. Trainers pause here for a last look at the harbor before the wider isles.",
+      "connections": ["skysong_harbor", "breeze_path"],
+      "known_by_default": true,
+      "level_range": { "min": 4, "max": 8 },
+      "notes": "Episode 2 resume point. Fixture location: party prepares to leave harbor."
+    },
+    {
+      "location_id": "breeze_path",
+      "name": "Breeze Path",
+      "type": "route",
+      "description": "A gentle floating route with grassy platforms and air currents. Wild Pidgey flock overhead. Celestide Mareep sightings are reported near the windier platforms. Hoppip drift on the breeze.",
+      "connections": ["route_2_southern_approach", "zephyra_gym"],
+      "known_by_default": true,
+      "level_range": { "min": 5, "max": 10 },
+      "notes": "First wild-encounter route after harbor. Planned wild table: Pidgey, Celestide Mareep (sighting), Hoppip."
+    },
+    {
+      "location_id": "zephyra_gym",
+      "name": "Gym 1 — Zephyra's Wind Gym",
+      "type": "gym",
+      "description": "An open-air arena perched on a wind-swept platform. Strong gusts sweep across the battle floor. Gym Leader Zephyra teaches control through balance, not force. Flying-type specialists thrive here.",
+      "connections": ["breeze_path"],
+      "known_by_default": false,
+      "level_range": { "min": 10, "max": 14 },
+      "notes": "Gym 1. Environmental effect: strong winds. Fail-soft retry if party struggles."
+    }
+  ],
+  "world_facts": [
+    {
+      "fact_id": "fact_floating_islands",
+      "title": "Floating Islands & Crystal Currents",
+      "description": "The Celestide Isles float on ancient crystal currents that alter local gravity. Disrupting or over-stabilizing these crystals can lift or drop sections of towns.",
+      "tags": ["lore", "geography", "crystals"],
+      "revealed_by_default": true
+    },
+    {
+      "fact_id": "fact_wind_festival",
+      "title": "Wind Festival",
+      "description": "Skysong Harbor's annual Wind Festival celebrates trade winds with banners, airship displays, and community games. Session 1 opened during this festival.",
+      "tags": ["lore", "skysong-harbor", "event"],
+      "revealed_by_default": true
+    },
+    {
+      "fact_id": "fact_crystal_destabilization",
+      "title": "Harbor Crystal Destabilization",
+      "description": "During Session 1, a gravity crystal destabilized and lifted a section of Skysong Harbor. Team Drift operatives appeared claiming intervention was for everyone's safety.",
+      "tags": ["plot", "team-drift", "harbor"],
+      "revealed_by_default": true
+    },
+    {
+      "fact_id": "fact_team_drift_philosophy",
+      "title": "Team Drift's Belief",
+      "description": "Team Drift are misguided engineers and researchers — not cruel villains. They believe harnessing gravity crystals will stabilize the region, even if towns must be relocated.",
+      "tags": ["antagonist", "team-drift", "lore"],
+      "revealed_by_default": false
+    },
+    {
+      "fact_id": "fact_celestide_mareep",
+      "title": "Celestide Mareep",
+      "description": "A regional Mareep variant with cloud-like wool and a soft glowing tail orb. Electric/Flying typing. Ability Sky Baah increases evasion during Tailwind. Evolves into Celestide Ampharos (Electric/Psychic).",
+      "tags": ["custom-forms", "wild-encounters"],
+      "revealed_by_default": false
+    }
+  ],
+  "recurring_npcs": [
+    {
+      "npc_id": "npc_professor_liora",
+      "name": "Professor Liora",
+      "role": "researcher",
+      "disposition": "friendly",
+      "home_location_id": "professor_liora_lab",
+      "notes": "Regional researcher. Gives starters and Pokédex. Worried about crystal instability and Team Drift's methods."
+    },
+    {
+      "npc_id": "npc_gym_leader_zephyra",
+      "name": "Zephyra",
+      "role": "gym_leader",
+      "disposition": "neutral",
+      "home_location_id": "zephyra_gym",
+      "notes": "Gym 1 Flying specialist. Philosophy: control through balance, not force. Pauses battles to teach strategy on failure (fail-soft)."
+    },
+    {
+      "npc_id": "npc_kaelix",
+      "name": "Kaelix",
+      "role": "antagonist",
+      "disposition": "neutral",
+      "home_location_id": "skysong_harbor",
+      "faction_id": "faction_team_drift",
+      "notes": "Team Drift field leader. Calm, logical, misguided. Believes order prevents catastrophe. Can retreat, surrender, or be reasoned with."
+    },
+    {
+      "npc_id": "npc_mira",
+      "name": "Mira",
+      "role": "antagonist",
+      "disposition": "friendly",
+      "home_location_id": "skysong_harbor",
+      "faction_id": "faction_team_drift",
+      "notes": "Team Drift support specialist. Nervous but kind. Afraid of the islands collapsing. Often provides technical context for Drift operations."
+    }
+  ]
+}
