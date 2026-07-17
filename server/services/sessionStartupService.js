@@ -96,7 +96,7 @@ export async function createSession(input) {
  */
 export async function activateSession(sessionId) {
   const adapter = getDefaultAdapter();
-  const session = await adapter.getSession(sessionId);
+  const session = await adapter.loadSession(sessionId);
   if (!session) {
     throw new SessionStartupError(`Session not found: "${sessionId}"`, 'SESSION_NOT_FOUND');
   }
@@ -126,7 +126,7 @@ export async function activateSession(sessionId) {
  */
 export async function passSessionTurn(sessionId, toTrainerId) {
   const adapter = getDefaultAdapter();
-  const session = await adapter.getSession(sessionId);
+  const session = await adapter.loadSession(sessionId);
   if (!session) {
     throw new SessionStartupError(`Session not found: "${sessionId}"`, 'SESSION_NOT_FOUND');
   }
