@@ -6,6 +6,7 @@
 import { PokemonSessionSchema } from '../schemas/session.js';
 import { randomUUID } from 'crypto';
 import { getDefaultAdapter } from './adapters/index.js';
+import { mergeCampaignCustomDex } from '../services/pokemonOverrideService.js';
 
 // Import adapters to register them
 import './adapters/file.js';
@@ -21,7 +22,9 @@ const adapter = getDefaultAdapter();
  */
 export async function loadSession(sessionId) {
   try {
-    return await adapter.loadSession(sessionId);
+    const session = await adapter.loadSession(sessionId);
+    if (!session) return null;
+    return mergeCampaignCustomDex(session);
   } catch (error) {
     console.error(`Error loading session ${sessionId}:`, error);
     throw error;

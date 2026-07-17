@@ -489,6 +489,9 @@ async function handlePostImport(req, res) {
       };
     }
 
+    const { mergeCampaignCustomDex } = await import('./services/pokemonOverrideService.js');
+    newSession = mergeCampaignCustomDex(newSession);
+
     try {
       const validated = PokemonSessionSchema.parse(newSession);
       await saveSession(validated.session.session_id, validated);

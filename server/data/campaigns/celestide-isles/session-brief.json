@@ -1,0 +1,54 @@
+{
+  "campaign_id": "celestide-isles-v1",
+  "episode_number": 2,
+  "episode_title": "Skyfall Expanse",
+  "starting_location_id": "route_2_southern_approach",
+  "scene_setup": "The trio — Valion, Pashion, and El Haddah — stand at the southern edge of Skysong Harbor on Route 2. Tutorial complete, starters at their sides, Professor Liora's parting words still fresh. The harbor glows behind them; ahead, grassy platforms of Breeze Path ride the warm trade winds. Wind banners snap overhead. The party's active goal is simple: leave the harbor together and begin the real journey toward Gym 1 and the wider Celestide Isles. Optional callback: if Team Drift's crystal theft at the Wind Festival wasn't fully resolved at the table, a Drift scout may appear on the path with a moral choice — help civilians, gather proof, or confront.",
+  "objectives": [
+    {
+      "objective_id": "obj_depart_harbor",
+      "description": "Leave Skysong Harbor via Route 2 — Southern Approach",
+      "optional": false
+    },
+    {
+      "objective_id": "obj_reach_breeze_path",
+      "description": "Traverse Breeze Path toward Zephyra's Gym",
+      "optional": false
+    },
+    {
+      "objective_id": "obj_wild_breeze_path",
+      "description": "Encounter wild Pokémon on Breeze Path (Pidgey, Hoppip, Celestide Mareep sighting)",
+      "optional": true
+    },
+    {
+      "objective_id": "obj_team_drift_callback",
+      "description": "Optional Team Drift encounter — moral choice on the route",
+      "optional": true
+    }
+  ],
+  "dm_notes": "Episode 2 — party is past Session 1 (Wind Festival, met Professor Liora, obtained starters, completed tutorial). Keep tone family-friendly. Rotate active_trainer_id among Valion, Pashion, and El Haddah for three-PC table play. Wind currents are atmospheric — use for narration on Breeze Path. Do not force Gym 1 this session unless players choose to rush. Track Pokédex discoveries in continuity.discovered_pokemon per Expansion §10.",
+  "planned_encounters": [
+    {
+      "encounter_id": "enc_wild_breeze_path_pidgey",
+      "type": "wild",
+      "location_id": "breeze_path",
+      "trigger": "automatic",
+      "notes": "First Breeze Path wild encounter. Pidgey lv5-7. Easy intro to route travel."
+    },
+    {
+      "encounter_id": "enc_wild_breeze_path_mareep_sighting",
+      "type": "wild",
+      "location_id": "breeze_path",
+      "trigger": "player_triggered",
+      "notes": "Optional Celestide Mareep (cstm_celestide_mareep) sighting — may flee; discovery counts for Pokédex even if not caught."
+    },
+    {
+      "encounter_id": "enc_team_drift_scout",
+      "type": "grunt",
+      "location_id": "route_2_southern_approach",
+      "trigger": "player_triggered",
+      "notes": "Optional Kaelix or Mira callback. Moral choice: help civilians, gather proof, or confront. Drift can retreat."
+    }
+  ],
+  "created_at": "2026-07-17T00:00:00.000Z"
+}
