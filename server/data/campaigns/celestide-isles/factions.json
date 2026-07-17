@@ -1,0 +1,32 @@
+{
+  "campaign_id": "celestide-isles-v1",
+  "factions": [
+    {
+      "faction_id": "faction_team_drift",
+      "name": "Team Drift",
+      "philosophy": "The floating islands are fragile. Only by harnessing gravity crystals to stabilize the region can catastrophe be prevented — even if relocation of towns is necessary.",
+      "tone": "misguided",
+      "motivation": "Stabilize the Celestide Isles via engineered gravity-crystal control before islands collapse or drift apart.",
+      "known_members": [
+        {
+          "npc_id": "npc_kaelix",
+          "role": "leader",
+          "notes": "Field leader. Calm, logical engineer. Commands crystal-retrieval operations."
+        },
+        {
+          "npc_id": "npc_mira",
+          "role": "researcher",
+          "notes": "Support specialist. Nervous but kind. Handles crystal diagnostics and civilian evacuation protocols."
+        },
+        {
+          "npc_id": "npc_team_drift_grunt_generic",
+          "role": "grunt",
+          "notes": "Engineers in light gear with crystal tools — not sinister. Use Flying or Electric types. Will retreat when outmatched."
+        }
+      ],
+      "controlled_locations": [],
+      "status": "active",
+      "notes": "Team Drift members can retreat, surrender, or be reasoned with. First encounter: Wind Festival crystal theft at Skysong Harbor (Session 1). Not irredeemable villains."
+    }
+  ]
+}

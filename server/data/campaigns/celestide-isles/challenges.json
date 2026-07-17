@@ -1,0 +1,20 @@
+{
+  "campaign_id": "celestide-isles-v1",
+  "challenges": [
+    {
+      "challenge_id": "gym_zephyra_wind",
+      "type": "gym",
+      "leader_npc_id": "npc_gym_leader_zephyra",
+      "location_id": "zephyra_gym",
+      "badge_name": "Gale Badge",
+      "badge_id": "badge_gale",
+      "speciality_type": "flying",
+      "recommended_level": 12,
+      "level_scale_factor": 1.0,
+      "pre_battle_dialogue": "Zephyra spreads her arms into the wind. 'The Gale Badge isn't won by force — it's earned by balance. Show me you can read the currents, not fight them.'",
+      "victory_dialogue": "'You listened to the wind. Take the Gale Badge — you've earned it.' Zephyra smiles as banners snap in the gust behind her.",
+      "defeat_dialogue": "Zephyra lowers her hand gently. 'The wind pushed you off rhythm. Let's pause — I'll show you how Flying types use the gusts. Ready when you are.'",
+      "notes": "Battle format: 2 Pokémon per trainer. Environmental effect: strong winds. Special rule — each round, Flying-type Pokémon gain +1 initiative (wind initiative). On failure, Zephyra pauses and teaches strategy before retry (fail-soft). Recommended team: Pidgeotto (lv11), Swablu (lv11), signature Tropius (lv13)."
+    }
+  ]
+}

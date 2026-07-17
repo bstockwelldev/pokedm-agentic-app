@@ -50,17 +50,18 @@ const campaignCache = new Map();
  */
 export function loadCampaign(campaignId) {
   if (!campaignId) return null;
-  if (campaignCache.has(campaignId)) return campaignCache.get(campaignId);
+  const resolvedId = resolveCampaignDataDir(campaignId);
+  if (campaignCache.has(resolvedId)) return campaignCache.get(resolvedId);
 
-  const rawFiles = readCampaignFiles(campaignId);
+  const rawFiles = readCampaignFiles(resolvedId);
   if (!rawFiles.meta) {
-    logger.warn('Campaign meta.json not found', { campaignId });
-    campaignCache.set(campaignId, null);
+    logger.warn('Campaign meta.json not found', { campaignId, resolvedId });
+    campaignCache.set(resolvedId, null);
     return null;
   }
 
-  const bundle = validateCampaignData(campaignId, rawFiles);
-  campaignCache.set(campaignId, bundle);
+  const bundle = validateCampaignData(resolvedId, rawFiles);
+  campaignCache.set(resolvedId, bundle);
   return bundle;
 }
 
@@ -148,12 +149,15 @@ function assembleCampaignContext(bundle, currentLocationId) {
     }
   }
 
-  // World facts (revealed by default)
+  // World facts (revealed by default — schema field: description + revealed_by_default)
   if (world?.world_facts?.length) {
     const revealed = world.world_facts.filter((f) => f.revealed_by_default);
     if (revealed.length) {
       lines.push('\n### World Facts (Known to Players)');
-      revealed.forEach((f) => lines.push(`- ${f.fact}`));
+      revealed.forEach((f) => {
+        const label = f.title ? `${f.title}: ${f.description}` : f.description;
+        lines.push(`- ${label}`);
+      });
     }
   }
 
@@ -175,32 +179,33 @@ function assembleCampaignContext(bundle, currentLocationId) {
     }
   }
 
-  // Active factions summary
+  // Active factions summary (schema field: tone, not alignment)
   if (factions?.factions?.length) {
     lines.push('\n### Active Factions');
     factions.factions.forEach((f) => {
-      lines.push(`- **${f.name}** (${f.alignment}): ${f.motivation}`);
+      lines.push(`- **${f.name}** (${f.tone}): ${f.motivation}`);
     });
   }
 
-  // Key NPCs
+  // Key NPCs (schema field: notes, not description)
   if (world?.recurring_npcs?.length) {
     lines.push('\n### Key NPCs');
     world.recurring_npcs.forEach((npc) => {
-      lines.push(`- **${npc.name}** [${npc.role}]: ${npc.disposition} — ${npc.description}`);
+      const detail = npc.notes ? ` — ${npc.notes}` : '';
+      lines.push(`- **${npc.name}** [${npc.role}]: ${npc.disposition}${detail}`);
     });
   }
 
-  // Active challenges (gym/boss hints)
+  // Active challenges (schema fields: type, recommended_level)
   if (challenges?.challenges?.length) {
     const gymOrBoss = challenges.challenges.filter(
-      (c) => c.battle_type === 'gym' || c.battle_type === 'boss'
+      (c) => c.type === 'gym' || c.type === 'boss'
     );
     if (gymOrBoss.length) {
       lines.push('\n### Upcoming Challenges');
       gymOrBoss.forEach((c) => {
-        const label = c.battle_type === 'gym' ? `Gym (${c.badge_id})` : 'Boss Battle';
-        lines.push(`- ${label} at ${c.location_id} — lv${c.level_cap}`);
+        const label = c.type === 'gym' ? `Gym (${c.badge_id})` : 'Boss Battle';
+        lines.push(`- ${label} at ${c.location_id} — lv${c.recommended_level}`);
       });
     }
   }
@@ -210,9 +215,34 @@ function assembleCampaignContext(bundle, currentLocationId) {
 
 // ── Z3: Pure Helpers ───────────────────────────────────────────────────────────
 
+/**
+ * Resolve filesystem campaign folder from a session or meta campaign_id.
+ * Handles underscore vs hyphen (celestide_isles → celestide-isles) and -v1 suffixes.
+ */
+export function resolveCampaignDataDir(campaignId) {
+  if (!campaignId) return null;
+
+  const normalized = String(campaignId);
+  const candidates = [
+    normalized,
+    normalized.replace(/_/g, '-'),
+    normalized.replace(/-v\d+(\.\d+)*$/i, ''),
+    normalized.replace(/_/g, '-').replace(/-v\d+(\.\d+)*$/i, ''),
+  ];
+
+  for (const id of [...new Set(candidates)]) {
+    const dir = join(CAMPAIGNS_DIR, id);
+    if (existsSync(join(dir, 'meta.json')) || existsSync(join(dir, 'custom-pokemon.json'))) {
+      return id;
+    }
+  }
+
+  return normalized.replace(/_/g, '-');
+}
+
 /** Resolve the filesystem directory for a campaign. */
 function getCampaignDir(campaignId) {
-  return join(CAMPAIGNS_DIR, campaignId);
+  return join(CAMPAIGNS_DIR, resolveCampaignDataDir(campaignId));
 }
 
 /** Read and parse a JSON file. Returns null if missing or malformed. */

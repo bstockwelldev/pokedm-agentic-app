@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "campaign_id": "celestide-isles-v1",
+    "description": "Custom Pokémon forms unique to the Celestide Isles. Loaded by the override layer (STO-22) at session start.",
+    "override_rules": "For each entry: typing, ability, and signature_move replace the canon equivalents. All other base stats, learnset, and evolution methods use PokeAPI data for the base_canon_ref species unless explicitly overridden here."
+  },
+  "pokemon": {
+    "cstm_celestide_mareep": {
+      "custom_species_id": "cstm_celestide_mareep",
+      "display_name": "Celestide Mareep",
+      "classification": "regional_variant",
+      "resembles": {
+        "base_canon_ref": "mareep",
+        "note": "Retains Mareep base stats and general learnset. Typing changed from Electric to Electric/Flying."
+      },
+      "concept": "Mareep adapted to floating isles where wool catches wind currents and tail orbs store celestial static. Cloud-like wool glows softly at night.",
+      "typing": ["electric", "flying"],
+      "lore": "Celestide Mareep are a beloved sight on Breeze Path — their wool drifts like small clouds and their tail orbs pulse with warm light. Locals say they sense wind shifts before storms. Evolves into Celestide Ampharos (Electric/Psychic) when exposed to stable crystal currents.",
+      "design_hooks": [
+        "Cloud-like wool with soft blue-white glow",
+        "Tail orb pulses brighter in Tailwind",
+        "Hooves leave faint static trails on grass platforms",
+        "Baahs carry on the wind farther than canon Mareep"
+      ],
+      "ability": {
+        "name": "Sky Baah",
+        "description": "Increases evasion by one stage while Tailwind is active on this Pokémon's side."
+      },
+      "stat_overrides": {
+        "note": "Base stats identical to canon Mareep (330 total). Type changes only."
+      },
+      "signature_move": {
+        "name": "Static Gust",
+        "type": "electric",
+        "category": "special",
+        "pp": 15,
+        "accuracy": 100,
+        "power": 60,
+        "simple_effect": "Releases a charged wind pulse. Deals Electric damage. In Tailwind, 20% chance to paralyze the target."
+      },
+      "learnset_simplified": [
+        "static_gust", "thunder_shock", "gust", "charge",
+        "thunderbolt", "air_slash", "cotton_spore", "discharge"
+      ],
+      "evolution": {
+        "kind": "evolves_from",
+        "notes": "Evolves into Flaaffy at level 15 (canon), then into Celestide Ampharos at level 30 while holding a Gravity Crystal Shard near a stable crystal current.",
+        "from_ref": { "kind": "canon", "ref": "mareep" }
+      },
+      "introduced_in": {
+        "campaign_id": "celestide-isles-v1",
+        "first_seen_location_id": "breeze_path",
+        "first_seen_session_id": "session_02"
+      }
+    },
+    "cstm_dreepy_celestide": {
+      "custom_species_id": "cstm_dreepy_celestide",
+      "display_name": "Celestide Dreepy",
+      "classification": "regional_variant",
+      "resembles": {
+        "base_canon_ref": "dreepy",
+        "note": "Retains Dreepy base stats and Dragon/Ghost typing. Celestide form reflects juvenile stage bonded to wind-current folklore."
+      },
+      "concept": "Dreepy drawn to the Celestide Isles' crystal currents — shy juveniles that hide behind trusted trainers until they sense ancient Pokémon legends nearby.",
+      "typing": ["dragon", "ghost"],
+      "lore": "Valion's partner Drift is a Celestide Dreepy — quiet, curious, and fascinated by ruins and legends carried on the wind. Unlike typical Dreepy, Celestide juveniles linger near gravity crystal harmonics. They evolve along the standard Dreepy line but retain a faint wind-trail when moving at speed.",
+      "design_hooks": [
+        "Translucent tail leaves a faint wind-trail",
+        "Eyes reflect crystal-light colors at night",
+        "Hides behind trainer's legs when shy",
+        "Hums softly near ancient ruins or crystal caverns"
+      ],
+      "ability": {
+        "name": "Celestial Current",
+        "description": "When entering battle on a route or wilderness location, this Pokémon's Speed rises one stage (wind-tuned reflexes)."
+      },
+      "stat_overrides": {
+        "note": "Base stats identical to canon Dreepy (270 total). Ability override only."
+      },
+      "signature_move": {
+        "name": "Drift Lash",
+        "type": "ghost",
+        "category": "physical",
+        "pp": 20,
+        "accuracy": 100,
+        "power": 40,
+        "simple_effect": "Strikes with a ghostly tail riding a wind current. Always goes first when the user is below 50% HP (priority +1 in that case)."
+      },
+      "learnset_simplified": [
+        "drift_lash", "astonish", "infestation", "quick_attack",
+        "bite", "dragon_dance", "phantom_force", "dragon_darts"
+      ],
+      "evolution": {
+        "kind": "evolves_from",
+        "notes": "Standard Dreepy evolution line (Dreepy → Drakloak → Dragapult). Celestide form is a regional juvenile presentation, not a separate species line.",
+        "from_ref": { "kind": "canon", "ref": "dreepy" }
+      },
+      "introduced_in": {
+        "campaign_id": "celestide-isles-v1",
+        "first_seen_location_id": "professor_liora_lab",
+        "first_seen_session_id": "session_02"
+      }
+    }
+  }
+}
