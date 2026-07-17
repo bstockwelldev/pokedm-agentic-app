@@ -953,7 +953,7 @@ app.post(`${API_V1}/sessions`, async (req, res) => {
 app.get(`${API_V1}/sessions/:id`, async (req, res) => {
   try {
     const adapter = getDefaultAdapter();
-    const session = await adapter.getSession(req.params.id);
+    const session = await adapter.loadSession(req.params.id);
     if (!session) {
       return res.status(404).json({
         error: 'Session not found',

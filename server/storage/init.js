@@ -4,6 +4,7 @@
  */
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import './adapters/file.js';
 
 // Detect Vercel environment (check multiple possible env vars)
 const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV || process.env.VERCEL_URL);
