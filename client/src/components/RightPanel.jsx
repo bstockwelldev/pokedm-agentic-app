@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { cn } from '../lib/utils';
 import StateTab from './StateTab';
+import PokedexPanel from './PokedexPanel';
 import ToolsTab from './ToolsTab';
 import LogsTab from './LogsTab';
 import MobileBottomSheet from './MobileBottomSheet';
@@ -15,10 +16,13 @@ export default function RightPanel({
   className,
   ...props
 }) {
-  const [activeTab, setActiveTab] = useState('state');
+  const [activeTab, setActiveTab] = useState('pokedex');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
+  const tabs = ['pokedex', 'state', 'tools', 'logs'];
+
   const tabLabels = {
+    pokedex: 'Pokédex',
     state: 'Session State',
     tools: 'Tool Executions',
     logs: 'Logs',
@@ -26,6 +30,8 @@ export default function RightPanel({
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'pokedex':
+        return <PokedexPanel session={session} />;
       case 'state':
         return <StateTab session={session} />;
       case 'tools':
@@ -56,7 +62,7 @@ export default function RightPanel({
       >
         {/* Tabs */}
         <div className="flex border-b border-border/60 bg-background/60" role="tablist">
-          {['state', 'tools', 'logs'].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               role="tab"
@@ -73,7 +79,7 @@ export default function RightPanel({
                   : 'border-transparent text-muted hover:text-foreground'
               )}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tabLabels[tab]}
             </button>
           ))}
         </div>
@@ -98,7 +104,7 @@ export default function RightPanel({
       >
         {/* Mobile Tabs */}
         <div className="flex border-b border-border mb-4" role="tablist">
-          {['state', 'tools', 'logs'].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               role="tab"
@@ -112,7 +118,7 @@ export default function RightPanel({
                   : 'border-transparent text-muted'
               )}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tabLabels[tab]}
             </button>
           ))}
         </div>
