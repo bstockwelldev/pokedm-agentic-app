@@ -147,6 +147,7 @@ export const CampaignChallengesSchema = z.object({
 // Loaded fresh each session by the host; tells the DM what this session is about.
 
 export const SessionBriefSchema = z.object({
+  id: z.string().optional(),
   campaign_id: z.string(),
   episode_number: z.number().int().min(1),
   episode_title: z.string().min(1),

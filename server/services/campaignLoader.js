@@ -9,7 +9,8 @@
  *   world.json        — CampaignWorldSchema (locations, world facts, NPCs)
  *   factions.json     — CampaignFactionsSchema
  *   challenges.json   — CampaignChallengesSchema
- *   session-brief.json — SessionBriefSchema (current episode brief)
+ *   session-brief.json — SessionBriefSchema (current/default episode brief)
+ *   session-briefs/*.json — episode-indexed briefs (resolved by id or episode_number)
  *
  * All files are optional except meta.json; missing files produce null fields.
  * Cache is invalidated when the campaignId changes or invalidateCampaignCache() is called.
@@ -22,7 +23,7 @@
  *     getCampaignDir        — resolve the campaign directory path
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -73,10 +74,48 @@ export function loadCampaign(campaignId) {
  * @param {string} [currentLocationId]  Used to surface relevant location details
  * @returns {string}  Formatted context block
  */
-export function buildCampaignContext(campaignId, currentLocationId) {
+export function buildCampaignContext(campaignId, currentLocationId, sessionBriefRef) {
   const bundle = loadCampaign(campaignId);
   if (!bundle) return '';
-  return assembleCampaignContext(bundle, currentLocationId);
+  const brief = resolveSessionBrief(campaignId, sessionBriefRef) ?? bundle.sessionBrief;
+  return assembleCampaignContext({ ...bundle, sessionBrief: brief }, currentLocationId);
+}
+
+/**
+ * Resolve a session brief by id, filename stem, episode number, or default.
+ *
+ * @param {string} campaignId
+ * @param {string|number} [briefRef]  e.g. "session-brief", "session-03-zephyras-trial", 3
+ * @returns {object|null}
+ */
+export function resolveSessionBrief(campaignId, briefRef) {
+  const bundle = loadCampaign(campaignId);
+  if (!bundle) return null;
+
+  if (briefRef === undefined || briefRef === null || briefRef === 'session-brief') {
+    return bundle.sessionBrief;
+  }
+
+  const ref = String(briefRef);
+
+  const episodeNumber = Number.parseInt(ref, 10);
+  if (!Number.isNaN(episodeNumber) && bundle.sessionBriefs?.length) {
+    const byEpisode = bundle.sessionBriefs.find((b) => b.episode_number === episodeNumber);
+    if (byEpisode) return byEpisode;
+  }
+
+  const fromIndex = bundle.sessionBriefs?.find(
+    (b) => b.id === ref || b.id === ref.replace(/\.json$/, '')
+  );
+  if (fromIndex) return fromIndex;
+
+  const briefPath = join(getCampaignDir(campaignId), 'session-briefs', `${ref.replace(/\.json$/, '')}.json`);
+  const rawBrief = readJsonFile(briefPath);
+  if (rawBrief) {
+    return parseSafe(SessionBriefSchema, rawBrief, campaignId, 'session-brief');
+  }
+
+  return bundle.sessionBrief;
 }
 
 /** Invalidate the in-process cache for a campaign. */
@@ -97,11 +136,12 @@ export function invalidateCampaignCache(campaignId) {
 function readCampaignFiles(campaignId) {
   const dir = getCampaignDir(campaignId);
   return {
-    meta:         readJsonFile(join(dir, 'meta.json')),
-    world:        readJsonFile(join(dir, 'world.json')),
-    factions:     readJsonFile(join(dir, 'factions.json')),
-    challenges:   readJsonFile(join(dir, 'challenges.json')),
-    sessionBrief: readJsonFile(join(dir, 'session-brief.json')),
+    meta:          readJsonFile(join(dir, 'meta.json')),
+    world:         readJsonFile(join(dir, 'world.json')),
+    factions:      readJsonFile(join(dir, 'factions.json')),
+    challenges:    readJsonFile(join(dir, 'challenges.json')),
+    sessionBrief:  readJsonFile(join(dir, 'session-brief.json')),
+    sessionBriefs: readSessionBriefsDir(dir, campaignId),
   };
 }
 
@@ -116,7 +156,7 @@ function validateCampaignData(campaignId, rawFiles) {
   const challenges   = parseSafe(CampaignChallengesSchema, rawFiles.challenges, campaignId, 'challenges');
   const sessionBrief = parseSafe(SessionBriefSchema, rawFiles.sessionBrief, campaignId, 'session-brief');
 
-  return { meta, world, factions, challenges, sessionBrief, campaignId };
+  return { meta, world, factions, challenges, sessionBrief, sessionBriefs: rawFiles.sessionBriefs, campaignId };
 }
 
 /**
@@ -135,7 +175,7 @@ function assembleCampaignContext(bundle, currentLocationId) {
 
   // Current episode brief
   if (sessionBrief) {
-    lines.push(`\n### Episode ${sessionBrief.episode_number}: Scene Setup`);
+    lines.push(`\n### Episode ${sessionBrief.episode_number}: ${sessionBrief.episode_title}`);
     lines.push(sessionBrief.scene_setup);
     if (sessionBrief.objectives?.length) {
       lines.push('\nObjectives:');
@@ -146,6 +186,13 @@ function assembleCampaignContext(bundle, currentLocationId) {
     }
     if (sessionBrief.dm_notes) {
       lines.push(`\nDM Notes: ${sessionBrief.dm_notes}`);
+    }
+    if (sessionBrief.planned_encounters?.length) {
+      lines.push('\nPlanned Encounters:');
+      sessionBrief.planned_encounters.forEach((enc) => {
+        const notes = enc.notes ? ` — ${enc.notes}` : '';
+        lines.push(`- [${enc.type}] ${enc.encounter_id} at ${enc.location_id}${notes}`);
+      });
     }
   }
 
@@ -254,6 +301,27 @@ function readJsonFile(filePath) {
     logger.warn('Failed to parse campaign JSON', { filePath, error: err.message });
     return null;
   }
+}
+
+/** Read episode-indexed session briefs from session-briefs/. */
+function readSessionBriefsDir(dir, campaignId) {
+  const briefsDir = join(dir, 'session-briefs');
+  if (!existsSync(briefsDir)) return [];
+
+  return readdirSync(briefsDir)
+    .filter((fileName) => fileName.endsWith('.json'))
+    .map((fileName) => {
+      const raw = readJsonFile(join(briefsDir, fileName));
+      if (!raw) return null;
+      const parsed = parseSafe(SessionBriefSchema, raw, campaignId, 'session-brief');
+      if (!parsed) return null;
+      return {
+        ...parsed,
+        id: parsed.id ?? fileName.replace(/\.json$/, ''),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.episode_number - b.episode_number);
 }
 
 /** Safely parse raw data through a Zod schema. Logs warnings, never throws. */
