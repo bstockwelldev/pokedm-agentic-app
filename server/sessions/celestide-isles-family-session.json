@@ -1,0 +1,107 @@
+{
+  "schema_version": "2.0.0",
+  "session_id": "celestide-isles-family-session",
+  "campaign_id": "celestide-isles",
+  "session_brief_id": "session-03-zephyras-trial",
+  "created_at": "2026-07-21T00:00:00.000Z",
+  "multiplayer": {
+    "status": "active",
+    "host_trainer_id": "valion",
+    "active_trainer_id": "valion",
+    "turn_order": ["valion", "pashion", "el_haddah"],
+    "players": {
+      "valion": { "name": "Valion", "is_active": true, "is_connected": true },
+      "pashion": { "name": "Pashion", "is_active": false, "is_connected": true },
+      "el_haddah": { "name": "El Haddah", "is_active": false, "is_connected": true }
+    }
+  },
+  "world_state": {
+    "current_location_id": "breeze_path",
+    "weather": "windy",
+    "time_of_day": "afternoon",
+    "active_field_effects": ["strong_winds"]
+  },
+  "characters": [
+    {
+      "trainer_id": "valion",
+      "trainer": {
+        "name": "Valion",
+        "trainer_class": "Explorer",
+        "level": 8,
+        "badges": []
+      },
+      "type_affinities": [{ "type": "dragon", "rank": 1, "xp": 0 }],
+      "pokemon_party": [],
+      "turn_index": 0
+    },
+    {
+      "trainer_id": "pashion",
+      "trainer": {
+        "name": "Pashion",
+        "trainer_class": "Trainer",
+        "level": 8,
+        "badges": []
+      },
+      "type_affinities": [{ "type": "fire", "rank": 1, "xp": 0 }],
+      "pokemon_party": [],
+      "turn_index": 1
+    },
+    {
+      "trainer_id": "el_haddah",
+      "trainer": {
+        "name": "El Haddah",
+        "trainer_class": "Trainer",
+        "level": 8,
+        "badges": []
+      },
+      "type_affinities": [{ "type": "water", "rank": 1, "xp": 0 }],
+      "pokemon_party": [],
+      "turn_index": 2
+    }
+  ],
+  "session": {
+    "session_id": "celestide-isles-family-session",
+    "campaign_id": "celestide-isles",
+    "episode_number": 3,
+    "episode_title": "Zephyra's Trial",
+    "scene": {
+      "location_id": "breeze_path",
+      "description": "The trio approaches Gym 1 after crossing Breeze Path.",
+      "mood": "anticipation"
+    },
+    "current_objectives": [
+      {
+        "objective_id": "obj_complete_breeze_path",
+        "description": "Complete the final stretch of Breeze Path and arrive at Zephyra's Wind Gym",
+        "optional": false,
+        "status": "active"
+      },
+      {
+        "objective_id": "obj_zephyra_pre_battle",
+        "description": "Hear Zephyra's pre-battle dialogue and accept the wind trial challenge",
+        "optional": false,
+        "status": "active"
+      },
+      {
+        "objective_id": "obj_challenge_gym_zephyra_wind",
+        "description": "Face Gym Leader Zephyra in the gym_zephyra_wind trial (2 Pokémon per trainer, strong winds)",
+        "optional": false,
+        "status": "active"
+      },
+      {
+        "objective_id": "obj_earn_badge_gale",
+        "description": "Win the trial and earn the Gale Badge (badge_gale)",
+        "optional": false,
+        "status": "active"
+      }
+    ],
+    "event_log": [],
+    "battle_state": { "active": false, "encounter_id": null },
+    "encounters": []
+  },
+  "continuity": {
+    "discovered_pokemon": [],
+    "locations_visited": ["skysong_harbor", "route_2_southern_approach", "breeze_path"],
+    "badges_earned": []
+  }
+}

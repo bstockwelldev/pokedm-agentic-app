@@ -42,6 +42,7 @@ lerna-debug.log*
 # Sessions (user data)
 server/sessions/*.json
 !server/sessions/.gitkeep
+!server/sessions/celestide-isles-family-session.json
 
 # Temporary files
 *.tmp
