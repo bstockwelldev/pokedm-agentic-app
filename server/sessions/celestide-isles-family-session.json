@@ -1,5 +1,6 @@
 {
   "schema_version": "1.1.0",
+  "session_brief_id": "session-03-zephyras-trial",
   "dex": {
     "canon_cache": {
       "pokemon": {},
@@ -58,6 +59,20 @@
         "known": true
       },
       {
+        "location_id": "breeze_path",
+        "name": "Breeze Path",
+        "type": "route",
+        "description": "A gentle floating route with grassy platforms and air currents. Wild Pidgey flock overhead. Celestide Mareep sightings are reported near the windier platforms.",
+        "known": true
+      },
+      {
+        "location_id": "zephyra_gym",
+        "name": "Gym 1 — Zephyra's Wind Gym",
+        "type": "landmark",
+        "description": "An open-air arena perched on a wind-swept platform. Strong gusts sweep across the battle floor. Gym Leader Zephyra teaches control through balance, not force.",
+        "known": true
+      },
+      {
         "location_id": "skyfall_expanse",
         "name": "Skyfall Expanse",
         "type": "route",
@@ -97,6 +112,14 @@
         "disposition": "friendly",
         "home_location_id": "skysong_harbor",
         "notes": "Helps Professor Liora with research and provides starter Pokémon to new trainers"
+      },
+      {
+        "npc_id": "npc_gym_leader_zephyra",
+        "name": "Zephyra",
+        "role": "guide",
+        "disposition": "neutral",
+        "home_location_id": "zephyra_gym",
+        "notes": "Gym 1 Flying specialist. Philosophy: control through balance, not force."
       }
     ],
     "world_facts": [
@@ -186,7 +209,7 @@
           "typing": [
             "Electric"
           ],
-          "level": 5,
+          "level": 8,
           "ability": {
             "kind": "canon",
             "name": "static",
@@ -216,8 +239,8 @@
           ],
           "stats": {
             "hp": {
-              "current": 20,
-              "max": 20
+              "current": 24,
+              "max": 24
             },
             "attack": 20,
             "defense": 15,
@@ -230,7 +253,7 @@
           "known_info": {
             "met_at": {
               "location_id": "skysong_harbor",
-              "session_id": "session_example_001"
+              "session_id": "celestide-isles-family-session"
             },
             "lore_learned": [
               "Pikachu is an Electric-type Pokémon",
@@ -249,7 +272,7 @@
           "achievement_id": "achievement_starter",
           "title": "First Partner",
           "description": "Received your first Pokémon from Professor Liora",
-          "earned_in_session_id": "session_example_001"
+          "earned_in_session_id": "celestide-isles-family-session"
         }
       ],
       "progression": {
@@ -271,6 +294,18 @@
             "milestone_id": "milestone_first_route",
             "title": "Explore Route 2",
             "description": "Travel to Skyfall Expanse and discover new Pokémon",
+            "completed": true
+          },
+          {
+            "milestone_id": "milestone_breeze_path",
+            "title": "Cross Breeze Path",
+            "description": "Traverse Breeze Path toward Gym 1",
+            "completed": true
+          },
+          {
+            "milestone_id": "milestone_gale_badge",
+            "title": "Earn the Gale Badge",
+            "description": "Defeat Gym Leader Zephyra in the wind trial",
             "completed": false
           }
         ]
@@ -278,29 +313,41 @@
     }
   ],
   "session": {
-    "session_id": "celestide_isles_family_001",
+    "session_id": "celestide-isles-family-session",
     "campaign_id": "celestide_isles",
     "character_ids": [
       "trainer_alex"
     ],
-    "episode_title": "Wind Festival Aftermath",
+    "episode_title": "Zephyra's Trial",
     "scene": {
-      "location_id": "route_2_southern_approach",
-      "description": "You're standing at the edge of Route 2, looking out over the Skyfall Expanse. The wind is gentle today, perfect for travel. Professor Liora's words echo in your mind: 'The islands hold many secrets. Trust your Pokémon, and they'll guide you.'",
+      "location_id": "breeze_path",
+      "description": "Episode 2 complete — Alex has crossed Breeze Path. Wind banners from Skysong Harbor are a distant memory; ahead, Gym 1 rises on a wind-swept platform. Gym Leader Zephyra stands at the arena center: 'The Gale Badge isn't won by force — it's earned by balance. Show me you can read the currents, not fight them.'",
       "mood": "adventurous"
     },
     "current_objectives": [
       {
-        "objective_id": "obj_explore_route_2",
-        "description": "Explore Route 2 and reach Skyfall Expanse",
+        "objective_id": "obj_complete_breeze_path",
+        "description": "Complete the final stretch of Breeze Path and arrive at Zephyra's Wind Gym",
         "status": "active",
-        "notes": "First major exploration objective"
+        "notes": "Episode 3 required objective"
       },
       {
-        "objective_id": "obj_meet_wind_wardens",
-        "description": "Learn about the Wind Wardens faction",
+        "objective_id": "obj_zephyra_pre_battle",
+        "description": "Hear Zephyra's pre-battle dialogue and accept the wind trial challenge",
         "status": "active",
-        "notes": "Optional: Discover more about the region's protectors"
+        "notes": "Episode 3 required objective"
+      },
+      {
+        "objective_id": "obj_challenge_gym_zephyra_wind",
+        "description": "Face Gym Leader Zephyra in the gym_zephyra_wind trial (2 Pokémon per trainer, strong winds)",
+        "status": "active",
+        "notes": "Expansion §09: Flying types +1 initiative each round"
+      },
+      {
+        "objective_id": "obj_earn_badge_gale",
+        "description": "Win the trial and earn the Gale Badge (badge_gale)",
+        "status": "active",
+        "notes": "Award badge_gale on victory; fail-soft retry on defeat"
       }
     ],
     "encounters": [],
@@ -319,7 +366,7 @@
     },
     "player_choices": {
       "options_presented": [],
-      "safe_default": "Continue along Route 2"
+      "safe_default": "Approach Zephyra's Wind Gym"
     },
     "controls": {
       "pause_requested": false,
@@ -344,13 +391,25 @@
         "kind": "scene",
         "summary": "Team Drift operatives appeared at the harbor",
         "details": "Engineers claimed the crystal theft was for everyone's safety. The party chose to help civilians first."
+      },
+      {
+        "t": "2026-07-17T00:00:00.000Z",
+        "kind": "scene",
+        "summary": "Departed Skysong Harbor on Route 2",
+        "details": "Episode 2 Skyfall Expanse — began the journey toward Gym 1"
+      },
+      {
+        "t": "2026-07-21T00:00:00.000Z",
+        "kind": "scene",
+        "summary": "Crossed Breeze Path toward Zephyra's Wind Gym",
+        "details": "Episode 3 Zephyra's Trial — strong winds herald the Gym 1 challenge ahead"
       }
     ]
   },
   "continuity": {
     "timeline": [
       {
-        "session_id": "celestide_isles_family_001",
+        "session_id": "celestide-isles-family-session",
         "episode_title": "The Journey Begins",
         "summary": "Arrived in Celestide Isles and met Professor Liora",
         "canonized": true,
@@ -361,7 +420,7 @@
         ]
       },
       {
-        "session_id": "celestide_isles_family_001",
+        "session_id": "celestide-isles-family-session",
         "episode_title": "The Journey Begins",
         "summary": "Received starter Pokémon Pikachu (nicknamed Sparky)",
         "canonized": true,
@@ -372,7 +431,7 @@
         ]
       },
       {
-        "session_id": "celestide_isles_family_001",
+        "session_id": "celestide-isles-family-session",
         "episode_title": "Wind Festival Aftermath",
         "summary": "Witnessed Team Drift intervene during the Wind Festival crystal incident",
         "canonized": true,
@@ -380,6 +439,17 @@
         "tags": [
           "team-drift",
           "harbor"
+        ]
+      },
+      {
+        "session_id": "celestide-isles-family-session",
+        "episode_title": "Skyfall Expanse",
+        "summary": "Traversed Route 2 and Breeze Path toward Gym 1",
+        "canonized": true,
+        "date": "2026-07-17",
+        "tags": [
+          "route",
+          "exploration"
         ]
       }
     ],
@@ -393,7 +463,7 @@
           "kind": "none"
         },
         "first_seen_location_id": "skysong_harbor",
-        "first_seen_session_id": "celestide_isles_family_001",
+        "first_seen_session_id": "celestide-isles-family-session",
         "notes": "Starter Pokémon received from Professor Liora"
       }
     ],
@@ -402,7 +472,7 @@
         "hook_id": "hook_wind_wardens",
         "description": "Learn more about the Wind Wardens and their mission",
         "urgency": "low",
-        "introduced_in_session_id": "celestide_isles_family_001",
+        "introduced_in_session_id": "celestide-isles-family-session",
         "linked_faction_id": "wind_wardens",
         "status": "open"
       },
@@ -410,8 +480,15 @@
         "hook_id": "hook_team_drift_crystal",
         "description": "Find out why Team Drift took the gravity crystal at Skysong Harbor",
         "urgency": "medium",
-        "introduced_in_session_id": "celestide_isles_family_001",
+        "introduced_in_session_id": "celestide-isles-family-session",
         "linked_faction_id": "faction_team_drift",
+        "status": "open"
+      },
+      {
+        "hook_id": "hook_gale_badge",
+        "description": "Challenge Gym Leader Zephyra and earn the Gale Badge",
+        "urgency": "high",
+        "introduced_in_session_id": "celestide-isles-family-session",
         "status": "open"
       }
     ],
@@ -420,7 +497,7 @@
   "state_versioning": {
     "current_version": "1.1.0",
     "previous_versions": [],
-    "migration_notes": "Example campaign session - ready for import and continuation",
-    "last_migrated_at": "2026-01-27T00:00:00.000Z"
+    "migration_notes": "Episode 3 resume point — Zephyra's Trial at Breeze Path / Gym 1",
+    "last_migrated_at": "2026-07-21T00:00:00.000Z"
   }
 }

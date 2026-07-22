@@ -20,7 +20,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import { loadCampaign } from './campaignLoader.js';
+import { loadCampaign, resolveSessionBrief } from './campaignLoader.js';
 import { resolvePokemon } from './pokemonOverrideService.js';
 import { runDMAgent } from '../agents/dm.js';
 import { getDefaultAdapter } from '../storage/adapters/index.js';
@@ -63,15 +63,18 @@ export async function createSession(input) {
     throw new SessionStartupError(`Campaign not found: "${campaign_id}"`, 'CAMPAIGN_NOT_FOUND');
   }
 
+  const sessionBrief = resolveSessionBrief(campaign_id, session_brief_id) ?? campaign.sessionBrief;
+
   // Build all the pieces
   const sessionId = generateSessionId();
   const trainerEntities = await buildTrainerEntities(players, campaign_id);
-  const worldState = buildWorldState(campaign);
+  const worldState = buildWorldState(campaign, sessionBrief);
   const playersMap = buildPlayersMap(trainerEntities);
 
   const sessionRecord = buildSessionRecord({
     sessionId,
     campaign,
+    sessionBrief,
     sessionBriefId: session_brief_id,
     trainerEntities,
     playersMap,
@@ -171,9 +174,9 @@ export async function passSessionTurn(sessionId, toTrainerId) {
 /**
  * Assemble the full session JSON record ready for persistence.
  */
-function buildSessionRecord({ sessionId, campaign, sessionBriefId, trainerEntities, playersMap, worldState }) {
+function buildSessionRecord({ sessionId, campaign, sessionBrief, sessionBriefId, trainerEntities, playersMap, worldState }) {
   const now = new Date().toISOString();
-  const brief = campaign.sessionBrief;
+  const brief = sessionBrief ?? campaign.sessionBrief;
 
   return {
     schema_version: '2.0.0',
@@ -194,14 +197,14 @@ function buildSessionRecord({ sessionId, campaign, sessionBriefId, trainerEntiti
       session_id: sessionId,
       campaign_id: campaign.campaignId,
       episode_number: brief?.episode_number ?? 1,
-      episode_title: brief ? `Episode ${brief.episode_number}` : 'Episode 1',
+      episode_title: brief?.episode_title ?? `Episode ${brief?.episode_number ?? 1}`,
       scene: {
         location_id: worldState.current_location_id,
         description: brief?.scene_setup ?? '',
         mood: 'calm',
       },
-      current_objectives: (brief?.objectives ?? []).map((obj, i) => ({
-        objective_id: `obj_${i + 1}`,
+      current_objectives: (brief?.objectives ?? []).map((obj) => ({
+        objective_id: obj.objective_id,
         description: obj.description,
         optional: obj.optional ?? false,
         status: 'active',
@@ -318,8 +321,10 @@ function generateSessionId() {
 /**
  * Derive initial world state from campaign meta + world data.
  */
-function buildWorldState(campaign) {
-  const startingLocationId = campaign.world?.region?.starting_location_id
+function buildWorldState(campaign, sessionBrief) {
+  const startingLocationId = sessionBrief?.starting_location_id
+    ?? campaign.sessionBrief?.starting_location_id
+    ?? campaign.world?.region?.starting_location_id
     ?? campaign.world?.locations?.[0]?.location_id
     ?? 'starting-location';
 
