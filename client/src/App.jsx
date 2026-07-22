@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ErrorBanner from './components/ErrorBanner';
 import DiagnosticsDrawer from './components/DiagnosticsDrawer';
 import ExportDrawer from './components/ExportDrawer';
+import RecapExportDrawer from './components/RecapExportDrawer';
 import ImportDrawer from './components/ImportDrawer';
 import AppShell from './components/AppShell';
 import TopBar from './components/TopBar';
@@ -112,6 +113,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [showExportDrawer, setShowExportDrawer] = useState(false);
+  const [showRecapExportDrawer, setShowRecapExportDrawer] = useState(false);
   const [showImportDrawer, setShowImportDrawer] = useState(false);
   const [lastRequest, setLastRequest] = useState(null);
 
@@ -549,11 +551,21 @@ export default function App() {
         messages={messages}
       />
 
+      <RecapExportDrawer
+        isOpen={showRecapExportDrawer}
+        onClose={() => setShowRecapExportDrawer(false)}
+        session={session}
+        sessionId={sessionId}
+        model={model}
+        onRecapAttached={(updatedSession) => setSession(updatedSession)}
+      />
+
       {/* Import Drawer */}
       <ImportDrawer
         isOpen={showImportDrawer}
         onClose={() => setShowImportDrawer(false)}
         onImportSuccess={handleImportSuccess}
+        sessionId={sessionId}
       />
 
       {/* Top Bar */}
@@ -563,6 +575,7 @@ export default function App() {
         availableModels={availableModels}
         sessionId={sessionId}
         onExportClick={() => setShowExportDrawer(true)}
+        onRecapExportClick={() => setShowRecapExportDrawer(true)}
         onImportClick={() => setShowImportDrawer(true)}
       />
 

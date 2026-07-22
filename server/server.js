@@ -489,6 +489,16 @@ async function handlePostImport(req, res) {
       };
     }
 
+    const recapText = req.body?.recap_text;
+    if (recapText && typeof recapText === 'string') {
+      const { attachRecapToSession, parseRecapExport } = await import('./services/recapExportService.js');
+      const parsed = parseRecapExport(recapText);
+      newSession = attachRecapToSession(newSession, parsed?.text || recapText.trim());
+      if (!importComponents.includes('continuity')) {
+        importComponents.push('continuity');
+      }
+    }
+
     const { mergeCampaignCustomDex } = await import('./services/pokemonOverrideService.js');
     newSession = mergeCampaignCustomDex(newSession);
 
@@ -1009,6 +1019,80 @@ app.post(`${API_V1}/sessions/:id/pass-turn`, async (req, res) => {
       : error.code === 'INVALID_TRAINER' ? 400 : 500;
     req.logger.error('Pass turn error', error);
     res.status(status).json({ error: error.message, requestId: req.requestId });
+  }
+});
+
+/**
+ * POST /api/v1/recap/export
+ * Export a human-readable session recap (Markdown or plain text).
+ * Body: { session, format?: 'md'|'txt', polish?: boolean, model?: string }
+ */
+app.post(`${API_V1}/recap/export`, async (req, res) => {
+  try {
+    const { exportSessionRecap } = await import('./services/recapExportService.js');
+    const { session, format = 'md', polish = false, model } = req.body || {};
+
+    if (!session || typeof session !== 'object') {
+      return res.status(400).json({
+        error: 'Missing session object',
+        requestId: req.requestId,
+      });
+    }
+
+    const result = await exportSessionRecap(session, { format, polish, model });
+    res.json({
+      ...result,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    req.logger.error('Recap export error', error);
+    res.status(500).json({ error: error.message, requestId: req.requestId });
+  }
+});
+
+/**
+ * POST /api/v1/sessions/:id/recap/attach
+ * Attach exported recap text to session continuity.recaps[].
+ * Body: { text: string }
+ */
+app.post(`${API_V1}/sessions/:id/recap/attach`, async (req, res) => {
+  try {
+    const { attachRecapToSession, parseRecapExport } = await import('./services/recapExportService.js');
+    const { saveSession } = await import('./storage/sessionStore.js');
+    const adapter = getDefaultAdapter();
+    const session = await adapter.loadSession(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session not found',
+        session_id: req.params.id,
+        requestId: req.requestId,
+      });
+    }
+
+    const rawText = req.body?.text;
+    if (!rawText || typeof rawText !== 'string') {
+      return res.status(400).json({
+        error: 'Missing recap text',
+        requestId: req.requestId,
+      });
+    }
+
+    const parsed = parseRecapExport(rawText);
+    const recapText = parsed?.text || rawText.trim();
+    const updated = attachRecapToSession(session, recapText);
+    await saveSession(req.params.id, updated);
+
+    res.json({
+      session: updated,
+      recap_attached: true,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    req.logger.error('Recap attach error', error);
+    res.status(500).json({ error: error.message, requestId: req.requestId });
   }
 });
 

@@ -9,7 +9,10 @@ import {
   getAvailableImportComponents,
   convertRawSessionToExportFormat,
   isRawSessionFormat,
+  parseRecapImportFile,
+  importRecapToSession,
 } from '../lib/importSession';
+import { isRecapExportFile } from '../lib/recapExport';
 
 /**
  * ImportDrawer Component
@@ -19,6 +22,7 @@ export default function ImportDrawer({
   isOpen,
   onClose,
   onImportSuccess,
+  sessionId,
 }) {
   const drawerRef = useRef(null);
   const closeButtonRef = useRef(null);
@@ -28,7 +32,7 @@ export default function ImportDrawer({
   const [validation, setValidation] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState(null);
-  const [dragActive, setDragActive] = useState(false);
+  const [recapImportText, setRecapImportText] = useState(null);
 
   // Reset state when drawer opens/closes
   useEffect(() => {
@@ -37,6 +41,7 @@ export default function ImportDrawer({
       setSelectedComponents({});
       setValidation(null);
       setImportError(null);
+      setRecapImportText(null);
       
       setTimeout(() => {
         if (closeButtonRef.current) {
@@ -85,8 +90,30 @@ export default function ImportDrawer({
   const handleFileSelect = async (file) => {
     if (!file) return;
 
+    const lowerName = file.name.toLowerCase();
+    const isRecapFile = lowerName.endsWith('.md') || lowerName.endsWith('.txt');
+
+    if (isRecapFile) {
+      try {
+        const text = await parseRecapImportFile(file);
+        if (!isRecapExportFile(text)) {
+          setImportError('This file does not look like a PokeDM recap export.');
+          setRecapImportText(null);
+          return;
+        }
+        setRecapImportText(text);
+        setImportData(null);
+        setValidation({ valid: true, warnings: ['Recap export detected — will attach to session continuity on import'] });
+        setImportError(null);
+      } catch (error) {
+        setImportError(error.message || 'Failed to parse recap file');
+        setRecapImportText(null);
+      }
+      return;
+    }
+
     if (!file.name.endsWith('.json')) {
-      setImportError('Please select a JSON file');
+      setImportError('Please select a JSON session file or a recap export (.md / .txt)');
       return;
     }
 
@@ -482,6 +509,31 @@ export default function ImportDrawer({
   };
 
   const handleImport = async () => {
+    if (recapImportText) {
+      if (!sessionId) {
+        setImportError('Load or create a session before importing a recap file.');
+        return;
+      }
+
+      setIsImporting(true);
+      setImportError(null);
+
+      try {
+        const result = await importRecapToSession(sessionId, recapImportText);
+        if (onImportSuccess) {
+          onImportSuccess(result);
+        }
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      } catch (error) {
+        setImportError(error.message || 'Failed to import recap');
+      } finally {
+        setIsImporting(false);
+      }
+      return;
+    }
+
     if (!importData) {
       setImportError('No file selected');
       return;
@@ -631,13 +683,13 @@ export default function ImportDrawer({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".json"
+                    accept=".json,.md,.txt"
                     onChange={handleFileInputChange}
                     className="hidden"
                     aria-label="Select JSON file to import"
                   />
                   <p className="text-foreground mb-2">
-                    Drag and drop a JSON file here, or
+                    Drag and drop a file here, or
                   </p>
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -651,10 +703,25 @@ export default function ImportDrawer({
                     Browse Files
                   </button>
                   <p className="text-xs text-muted mt-2">
-                    Select a PokeDM export file (.json) or raw session file
+                    Select a PokeDM export file (.json), recap export (.md / .txt), or raw session file
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Recap Import Preview */}
+          {recapImportText && (
+            <div className="p-3 rounded-md bg-muted/10 border border-border space-y-2">
+              <div className="text-sm text-foreground font-medium">
+                Recap Export Detected
+              </div>
+              <p className="text-xs text-muted">
+                This recap will be attached to your current session continuity when you import.
+              </p>
+              <pre className="text-xs text-foreground whitespace-pre-wrap max-h-48 overflow-y-auto border border-border rounded-md p-2 bg-background/50">
+                {recapImportText.slice(0, 1200)}{recapImportText.length > 1200 ? '…' : ''}
+              </pre>
             </div>
           )}
 
@@ -781,7 +848,7 @@ export default function ImportDrawer({
           {importData && (
             <button
               onClick={handleImport}
-              disabled={isImporting || !Object.values(selectedComponents).some((s) => s)}
+              disabled={isImporting || (!recapImportText && (!importData || !Object.values(selectedComponents).some((s) => s)))}
               className={cn(
                 'px-4 py-2 rounded-md',
                 'bg-brand text-background font-medium',

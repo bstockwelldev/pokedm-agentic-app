@@ -10,6 +10,7 @@ export default function TopBar({
   availableModels = [],
   sessionId,
   onExportClick,
+  onRecapExportClick,
   onImportClick,
   className,
   ...props
@@ -46,6 +47,22 @@ export default function TopBar({
               title="Import"
             >
               📥
+            </button>
+            <button
+              onClick={onRecapExportClick}
+              disabled={!sessionId}
+              aria-label="Export session recap"
+              className={cn(
+                'p-2 rounded-md',
+                'bg-background/60 border border-border/60',
+                'text-foreground',
+                'focus:outline-none focus:ring-2 focus:ring-ring',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'hover:bg-muted/20 transition-colors'
+              )}
+              title="Export Recap"
+            >
+              📋
             </button>
             <button
               onClick={onExportClick}
@@ -172,6 +189,22 @@ export default function TopBar({
               title="Import session from file"
             >
               Import
+            </button>
+            <button
+              onClick={onRecapExportClick}
+              disabled={!sessionId}
+              aria-label="Export session recap"
+              className={cn(
+                'px-3 py-1.5 rounded-md text-sm',
+                'bg-background/60 border border-border/60',
+                'text-foreground',
+                'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                'hover:bg-muted/20 transition-colors'
+              )}
+              title="Export family recap for next play night"
+            >
+              Recap
             </button>
             <button
               onClick={onExportClick}

@@ -1,107 +1,503 @@
 {
-  "schema_version": "2.0.0",
-  "session_id": "celestide-isles-family-session",
-  "campaign_id": "celestide-isles",
+  "schema_version": "1.1.0",
   "session_brief_id": "session-03-zephyras-trial",
-  "created_at": "2026-07-21T00:00:00.000Z",
-  "multiplayer": {
-    "status": "active",
-    "host_trainer_id": "valion",
-    "active_trainer_id": "valion",
-    "turn_order": ["valion", "pashion", "el_haddah"],
-    "players": {
-      "valion": { "name": "Valion", "is_active": true, "is_connected": true },
-      "pashion": { "name": "Pashion", "is_active": false, "is_connected": true },
-      "el_haddah": { "name": "El Haddah", "is_active": false, "is_connected": true }
+  "dex": {
+    "canon_cache": {
+      "pokemon": {},
+      "moves": {},
+      "abilities": {},
+      "types": {},
+      "species": {},
+      "evolution_chains": {},
+      "items": {},
+      "locations": {},
+      "generations": {}
+    },
+    "cache_policy": {
+      "source": "pokeapi",
+      "gen_range": "1-9",
+      "ttl_hours": 168,
+      "max_entries_per_kind": 5000,
+      "notes": "Canon reference-only cache; never treated as player-owned state."
     }
   },
-  "world_state": {
-    "current_location_id": "breeze_path",
-    "weather": "windy",
-    "time_of_day": "afternoon",
-    "active_field_effects": ["strong_winds"]
+  "custom_dex": {
+    "pokemon": {},
+    "ruleset_flags": {
+      "allow_new_species": false
+    },
+    "notes": "Custom Pokémon stored alongside canon, never overwriting canon entries."
+  },
+  "campaign": {
+    "campaign_id": "celestide_isles",
+    "region": {
+      "name": "Celestide Isles",
+      "theme": "wind, celestial energy, environmental balance",
+      "description": "A floating archipelago where wind currents carry celestial energy. The islands are connected by natural bridges and floating platforms. The region is known for its unique Pokémon that have adapted to the high-altitude, wind-swept environment.",
+      "environment_tags": [
+        "wind",
+        "celestial energy",
+        "environmental balance",
+        "floating islands",
+        "high altitude"
+      ],
+      "climate": "clear_wind"
+    },
+    "locations": [
+      {
+        "location_id": "skysong_harbor",
+        "name": "Skysong Harbor",
+        "type": "town",
+        "description": "A bustling port town built on the largest floating island. The harbor is filled with wind-powered ships and gliders. Professor Liora's research lab overlooks the harbor, studying the unique Pokémon of the region.",
+        "known": true
+      },
+      {
+        "location_id": "route_2_southern_approach",
+        "name": "Route 2 - Southern Approach",
+        "type": "route",
+        "description": "A scenic route connecting Skysong Harbor to the Skyfall Expanse. Wind currents make travel easier, and wild Pokémon are more active during certain times of day.",
+        "known": true
+      },
+      {
+        "location_id": "breeze_path",
+        "name": "Breeze Path",
+        "type": "route",
+        "description": "A gentle floating route with grassy platforms and air currents. Wild Pidgey flock overhead. Celestide Mareep sightings are reported near the windier platforms.",
+        "known": true
+      },
+      {
+        "location_id": "zephyra_gym",
+        "name": "Gym 1 — Zephyra's Wind Gym",
+        "type": "landmark",
+        "description": "An open-air arena perched on a wind-swept platform. Strong gusts sweep across the battle floor. Gym Leader Zephyra teaches control through balance, not force.",
+        "known": true
+      },
+      {
+        "location_id": "skyfall_expanse",
+        "name": "Skyfall Expanse",
+        "type": "route",
+        "description": "A vast open area between islands where trainers can practice battling. The wind here is strong, making it a popular spot for Flying-type Pokémon.",
+        "known": false
+      }
+    ],
+    "factions": [
+      {
+        "faction_id": "wind_wardens",
+        "name": "Wind Wardens",
+        "philosophy": "Protect the natural wind currents and celestial energy balance",
+        "tone": "idealistic",
+        "known_members": [
+          {
+            "npc_id": "ranger_kai",
+            "role": "ranger",
+            "notes": "Leader of the Wind Wardens"
+          }
+        ],
+        "status": "active"
+      }
+    ],
+    "recurring_npcs": [
+      {
+        "npc_id": "professor_liora",
+        "name": "Professor Liora",
+        "role": "researcher",
+        "disposition": "friendly",
+        "home_location_id": "skysong_harbor",
+        "notes": "Expert on Celestide Isles Pokémon and their adaptations to wind and altitude"
+      },
+      {
+        "npc_id": "assistant_kael",
+        "name": "Assistant Kael",
+        "role": "researcher",
+        "disposition": "friendly",
+        "home_location_id": "skysong_harbor",
+        "notes": "Helps Professor Liora with research and provides starter Pokémon to new trainers"
+      },
+      {
+        "npc_id": "npc_gym_leader_zephyra",
+        "name": "Zephyra",
+        "role": "guide",
+        "disposition": "neutral",
+        "home_location_id": "zephyra_gym",
+        "notes": "Gym 1 Flying specialist. Philosophy: control through balance, not force."
+      }
+    ],
+    "world_facts": [
+      {
+        "fact_id": "celestial_alignment",
+        "title": "Celestial Alignment",
+        "description": "Every 100 years, the celestial bodies align perfectly over the Celestide Isles, causing a surge in Pokémon activity and rare encounters.",
+        "tags": [
+          "global_effect",
+          "celestial",
+          "rare_encounters"
+        ],
+        "revealed": true
+      },
+      {
+        "fact_id": "wind_currents",
+        "title": "Wind Currents",
+        "description": "The wind currents in the region are currently favorable, making travel between islands easier and faster.",
+        "tags": [
+          "global_effect",
+          "travel",
+          "wind"
+        ],
+        "revealed": true
+      }
+    ]
   },
   "characters": [
     {
-      "trainer_id": "valion",
+      "character_id": "trainer_alex",
       "trainer": {
-        "name": "Valion",
-        "trainer_class": "Explorer",
-        "level": 8,
-        "badges": []
+        "name": "Alex",
+        "age_group": "teen",
+        "background": "Aspiring Pokémon researcher who just arrived in Celestide Isles",
+        "personality_traits": [
+          "curious",
+          "brave",
+          "caring"
+        ],
+        "bonds": [
+          {
+            "bond_id": "bond_starter",
+            "target": "pokemon_pikachu_001",
+            "description": "First Pokémon partner, received from Professor Liora"
+          }
+        ]
       },
-      "type_affinities": [{ "type": "dragon", "rank": 1, "xp": 0 }],
-      "pokemon_party": [],
-      "turn_index": 0
-    },
-    {
-      "trainer_id": "pashion",
-      "trainer": {
-        "name": "Pashion",
-        "trainer_class": "Trainer",
-        "level": 8,
-        "badges": []
+      "inventory": {
+        "items": [
+          {
+            "kind": "canon",
+            "ref": "canon:potion",
+            "quantity": 3,
+            "notes": "Basic healing item"
+          },
+          {
+            "kind": "canon",
+            "ref": "canon:antidote",
+            "quantity": 2,
+            "notes": "Cures poison status"
+          }
+        ],
+        "pokeballs": {
+          "poke_ball": 10,
+          "great_ball": 0,
+          "ultra_ball": 0
+        },
+        "key_items": [
+          {
+            "kind": "canon",
+            "ref": "canon:pokedex",
+            "notes": "Pokédex from Professor Liora"
+          }
+        ]
       },
-      "type_affinities": [{ "type": "fire", "rank": 1, "xp": 0 }],
-      "pokemon_party": [],
-      "turn_index": 1
-    },
-    {
-      "trainer_id": "el_haddah",
-      "trainer": {
-        "name": "El Haddah",
-        "trainer_class": "Trainer",
-        "level": 8,
-        "badges": []
-      },
-      "type_affinities": [{ "type": "water", "rank": 1, "xp": 0 }],
-      "pokemon_party": [],
-      "turn_index": 2
+      "pokemon_party": [
+        {
+          "instance_id": "pokemon_pikachu_001",
+          "species_ref": {
+            "kind": "canon",
+            "ref": "canon:pikachu"
+          },
+          "nickname": "Sparky",
+          "form_ref": {
+            "kind": "none"
+          },
+          "typing": [
+            "Electric"
+          ],
+          "level": 8,
+          "ability": {
+            "kind": "canon",
+            "name": "static",
+            "description": "Contact with this Pokémon may cause paralysis"
+          },
+          "moves": [
+            {
+              "kind": "canon",
+              "name": "thunder-shock",
+              "type": "Electric",
+              "category": "special",
+              "pp": 30,
+              "accuracy": 100,
+              "power": 40,
+              "simple_effect": "A weak electric attack"
+            },
+            {
+              "kind": "canon",
+              "name": "growl",
+              "type": "Normal",
+              "category": "status",
+              "pp": 40,
+              "accuracy": 100,
+              "power": null,
+              "simple_effect": "Lowers the target's Attack stat"
+            }
+          ],
+          "stats": {
+            "hp": {
+              "current": 24,
+              "max": 24
+            },
+            "attack": 20,
+            "defense": 15,
+            "special_attack": 25,
+            "special_defense": 20,
+            "speed": 30
+          },
+          "status_conditions": [],
+          "friendship": 70,
+          "known_info": {
+            "met_at": {
+              "location_id": "skysong_harbor",
+              "session_id": "celestide-isles-family-session"
+            },
+            "lore_learned": [
+              "Pikachu is an Electric-type Pokémon",
+              "Pikachu evolves from Pichu with high friendship"
+            ],
+            "seen_moves": [
+              "thunder-shock",
+              "growl"
+            ]
+          },
+          "notes": "Starter Pokémon received from Professor Liora. Very friendly and eager to explore."
+        }
+      ],
+      "achievements": [
+        {
+          "achievement_id": "achievement_starter",
+          "title": "First Partner",
+          "description": "Received your first Pokémon from Professor Liora",
+          "earned_in_session_id": "celestide-isles-family-session"
+        }
+      ],
+      "progression": {
+        "badges": 0,
+        "milestones": [
+          {
+            "milestone_id": "milestone_arrival",
+            "title": "Arrived in Celestide Isles",
+            "description": "Started your adventure in the floating archipelago",
+            "completed": true
+          },
+          {
+            "milestone_id": "milestone_starter",
+            "title": "Obtained Starter Pokémon",
+            "description": "Received Pikachu from Professor Liora",
+            "completed": true
+          },
+          {
+            "milestone_id": "milestone_first_route",
+            "title": "Explore Route 2",
+            "description": "Travel to Skyfall Expanse and discover new Pokémon",
+            "completed": true
+          },
+          {
+            "milestone_id": "milestone_breeze_path",
+            "title": "Cross Breeze Path",
+            "description": "Traverse Breeze Path toward Gym 1",
+            "completed": true
+          },
+          {
+            "milestone_id": "milestone_gale_badge",
+            "title": "Earn the Gale Badge",
+            "description": "Defeat Gym Leader Zephyra in the wind trial",
+            "completed": false
+          }
+        ]
+      }
     }
   ],
   "session": {
     "session_id": "celestide-isles-family-session",
-    "campaign_id": "celestide-isles",
-    "episode_number": 3,
+    "campaign_id": "celestide_isles",
+    "character_ids": [
+      "trainer_alex"
+    ],
     "episode_title": "Zephyra's Trial",
     "scene": {
       "location_id": "breeze_path",
-      "description": "The trio approaches Gym 1 after crossing Breeze Path.",
-      "mood": "anticipation"
+      "description": "Episode 2 complete — Alex has crossed Breeze Path. Wind banners from Skysong Harbor are a distant memory; ahead, Gym 1 rises on a wind-swept platform. Gym Leader Zephyra stands at the arena center: 'The Gale Badge isn't won by force — it's earned by balance. Show me you can read the currents, not fight them.'",
+      "mood": "adventurous"
     },
     "current_objectives": [
       {
         "objective_id": "obj_complete_breeze_path",
         "description": "Complete the final stretch of Breeze Path and arrive at Zephyra's Wind Gym",
-        "optional": false,
-        "status": "active"
+        "status": "active",
+        "notes": "Episode 3 required objective"
       },
       {
         "objective_id": "obj_zephyra_pre_battle",
         "description": "Hear Zephyra's pre-battle dialogue and accept the wind trial challenge",
-        "optional": false,
-        "status": "active"
+        "status": "active",
+        "notes": "Episode 3 required objective"
       },
       {
         "objective_id": "obj_challenge_gym_zephyra_wind",
         "description": "Face Gym Leader Zephyra in the gym_zephyra_wind trial (2 Pokémon per trainer, strong winds)",
-        "optional": false,
-        "status": "active"
+        "status": "active",
+        "notes": "Expansion §09: Flying types +1 initiative each round"
       },
       {
         "objective_id": "obj_earn_badge_gale",
         "description": "Win the trial and earn the Gale Badge (badge_gale)",
-        "optional": false,
-        "status": "active"
+        "status": "active",
+        "notes": "Award badge_gale on victory; fail-soft retry on defeat"
       }
     ],
-    "event_log": [],
-    "battle_state": { "active": false, "encounter_id": null },
-    "encounters": []
+    "encounters": [],
+    "battle_state": {
+      "active": false,
+      "round": 0,
+      "turn_order": [],
+      "field_effects": []
+    },
+    "fail_soft_flags": {
+      "recent_failures": 0,
+      "recent_successes": 0,
+      "difficulty_adjusted": false,
+      "party_confidence": "medium",
+      "auto_scaled_last_encounter": false
+    },
+    "player_choices": {
+      "options_presented": [],
+      "safe_default": "Approach Zephyra's Wind Gym"
+    },
+    "controls": {
+      "pause_requested": false,
+      "skip_requested": false,
+      "explain_requested": false
+    },
+    "event_log": [
+      {
+        "t": "2026-01-27T00:00:00.000Z",
+        "kind": "scene",
+        "summary": "Arrived in Skysong Harbor",
+        "details": "Met Professor Liora and received starter Pokémon Pikachu"
+      },
+      {
+        "t": "2026-01-27T00:15:00.000Z",
+        "kind": "discovery",
+        "summary": "Received Pokédex from Professor Liora",
+        "details": "The Pokédex will help track discovered Pokémon in the region"
+      },
+      {
+        "t": "2026-01-27T00:45:00.000Z",
+        "kind": "scene",
+        "summary": "Team Drift operatives appeared at the harbor",
+        "details": "Engineers claimed the crystal theft was for everyone's safety. The party chose to help civilians first."
+      },
+      {
+        "t": "2026-07-17T00:00:00.000Z",
+        "kind": "scene",
+        "summary": "Departed Skysong Harbor on Route 2",
+        "details": "Episode 2 Skyfall Expanse — began the journey toward Gym 1"
+      },
+      {
+        "t": "2026-07-21T00:00:00.000Z",
+        "kind": "scene",
+        "summary": "Crossed Breeze Path toward Zephyra's Wind Gym",
+        "details": "Episode 3 Zephyra's Trial — strong winds herald the Gym 1 challenge ahead"
+      }
+    ]
   },
   "continuity": {
-    "discovered_pokemon": [],
-    "locations_visited": ["skysong_harbor", "route_2_southern_approach", "breeze_path"],
-    "badges_earned": []
+    "timeline": [
+      {
+        "session_id": "celestide-isles-family-session",
+        "episode_title": "The Journey Begins",
+        "summary": "Arrived in Celestide Isles and met Professor Liora",
+        "canonized": true,
+        "date": "2026-01-27",
+        "tags": [
+          "arrival",
+          "meeting"
+        ]
+      },
+      {
+        "session_id": "celestide-isles-family-session",
+        "episode_title": "The Journey Begins",
+        "summary": "Received starter Pokémon Pikachu (nicknamed Sparky)",
+        "canonized": true,
+        "date": "2026-01-27",
+        "tags": [
+          "pokemon",
+          "starter"
+        ]
+      },
+      {
+        "session_id": "celestide-isles-family-session",
+        "episode_title": "Wind Festival Aftermath",
+        "summary": "Witnessed Team Drift intervene during the Wind Festival crystal incident",
+        "canonized": true,
+        "date": "2026-01-27",
+        "tags": [
+          "team-drift",
+          "harbor"
+        ]
+      },
+      {
+        "session_id": "celestide-isles-family-session",
+        "episode_title": "Skyfall Expanse",
+        "summary": "Traversed Route 2 and Breeze Path toward Gym 1",
+        "canonized": true,
+        "date": "2026-07-17",
+        "tags": [
+          "route",
+          "exploration"
+        ]
+      }
+    ],
+    "discovered_pokemon": [
+      {
+        "species_ref": {
+          "kind": "canon",
+          "ref": "canon:pikachu"
+        },
+        "form_ref": {
+          "kind": "none"
+        },
+        "first_seen_location_id": "skysong_harbor",
+        "first_seen_session_id": "celestide-isles-family-session",
+        "notes": "Starter Pokémon received from Professor Liora"
+      }
+    ],
+    "unresolved_hooks": [
+      {
+        "hook_id": "hook_wind_wardens",
+        "description": "Learn more about the Wind Wardens and their mission",
+        "urgency": "low",
+        "introduced_in_session_id": "celestide-isles-family-session",
+        "linked_faction_id": "wind_wardens",
+        "status": "open"
+      },
+      {
+        "hook_id": "hook_team_drift_crystal",
+        "description": "Find out why Team Drift took the gravity crystal at Skysong Harbor",
+        "urgency": "medium",
+        "introduced_in_session_id": "celestide-isles-family-session",
+        "linked_faction_id": "faction_team_drift",
+        "status": "open"
+      },
+      {
+        "hook_id": "hook_gale_badge",
+        "description": "Challenge Gym Leader Zephyra and earn the Gale Badge",
+        "urgency": "high",
+        "introduced_in_session_id": "celestide-isles-family-session",
+        "status": "open"
+      }
+    ],
+    "recaps": []
+  },
+  "state_versioning": {
+    "current_version": "1.1.0",
+    "previous_versions": [],
+    "migration_notes": "Episode 3 resume point — Zephyra's Trial at Breeze Path / Gym 1",
+    "last_migrated_at": "2026-07-21T00:00:00.000Z"
   }
 }
