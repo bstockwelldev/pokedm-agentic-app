@@ -626,6 +626,32 @@ app.get('/api/campaigns', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/campaigns/available
+ * List bundled seed campaigns for the campaign picker UI.
+ * Returns: { campaigns: Array<{ slug, campaign_id, title, region_name, tone, blurb, ... }> }
+ */
+app.get(`${API_V1}/campaigns/available`, async (req, res) => {
+  try {
+    const { listBundledCampaigns } = await import('./services/campaignLoader.js');
+    const campaigns = listBundledCampaigns();
+    res.json({
+      campaigns,
+      count: campaigns.length,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    req.logger.error('Bundled campaign listing error', error);
+    res.status(500).json({
+      error: 'Failed to list bundled campaigns',
+      details: error.message,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
  * GET /api/v1/campaigns/:id
  * Get campaign by ID
  * Returns: { campaign }
@@ -929,6 +955,36 @@ app.put(`${API_V1}/campaigns/:id/custom-pokemon/:pokemonId`, async (req, res) =>
 });
 
 // ── Session Runtime Routes — STO-29 + STO-32 ─────────────────────────────────
+
+/**
+ * POST /api/v1/sessions/bundled
+ * Create a v1.1.0 session seeded from a bundled campaign (campaign picker).
+ * Body: { campaign_id, host_name?, session_brief_id? }
+ * Returns: { session_id, session }
+ */
+app.post(`${API_V1}/sessions/bundled`, async (req, res) => {
+  try {
+    const { createBundledCampaignSession, BundledCampaignSessionError } = await import(
+      './services/bundledCampaignSessionService.js'
+    );
+    const result = await createBundledCampaignSession(req.body ?? {});
+    res.status(201).json({
+      session_id: result.sessionId,
+      session: result.session,
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    const status = error.code === 'CAMPAIGN_NOT_FOUND' ? 404 : 400;
+    req.logger.error('Bundled session creation error', error, { endpoint: `${API_V1}/sessions/bundled` });
+    res.status(status).json({
+      error: error.message,
+      code: error.code ?? 'BUNDLED_SESSION_CREATE_FAILED',
+      requestId: req.requestId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
 /**
  * POST /api/v1/sessions

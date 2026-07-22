@@ -23,7 +23,7 @@
  *     getCampaignDir        — resolve the campaign directory path
  */
 
-import { readFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -116,6 +116,58 @@ export function resolveSessionBrief(campaignId, briefRef) {
   }
 
   return bundle.sessionBrief;
+}
+
+/**
+ * List bundled campaigns from server/data/campaigns/ for the campaign picker UI.
+ * Returns summary metadata from each campaign's meta.json and default session brief.
+ *
+ * @returns {Array<{
+ *   slug: string,
+ *   campaign_id: string,
+ *   title: string,
+ *   region_name: string,
+ *   tone: string,
+ *   blurb: string,
+ *   tags: string[],
+ *   default_session_brief_id: string,
+ *   episode_number: number,
+ *   episode_title: string
+ * }>}
+ */
+export function listBundledCampaigns() {
+  if (!existsSync(CAMPAIGNS_DIR)) return [];
+
+  return readdirSync(CAMPAIGNS_DIR)
+    .filter((entry) => {
+      const entryPath = join(CAMPAIGNS_DIR, entry);
+      try {
+        return statSync(entryPath).isDirectory()
+          && existsSync(join(entryPath, 'meta.json'));
+      } catch {
+        return false;
+      }
+    })
+    .map((slug) => {
+      const bundle = loadCampaign(slug);
+      if (!bundle?.meta) return null;
+
+      const brief = bundle.sessionBrief;
+      return {
+        slug: bundle.campaignId,
+        campaign_id: bundle.meta.campaign_id,
+        title: bundle.meta.title,
+        region_name: bundle.meta.region_name,
+        tone: bundle.meta.tone,
+        blurb: bundle.meta.notes ?? '',
+        tags: bundle.meta.tags ?? [],
+        default_session_brief_id: brief?.id ?? 'session-brief',
+        episode_number: brief?.episode_number ?? 1,
+        episode_title: brief?.episode_title ?? `Episode ${brief?.episode_number ?? 1}`,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 /** Invalidate the in-process cache for a campaign. */

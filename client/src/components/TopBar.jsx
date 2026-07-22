@@ -12,6 +12,7 @@ export default function TopBar({
   onExportClick,
   onRecapExportClick,
   onImportClick,
+  onNewCampaignClick,
   className,
   ...props
 }) {
@@ -34,6 +35,22 @@ export default function TopBar({
             PokeDM
           </h1>
           <div className="flex items-center gap-2 ml-2">
+            {onNewCampaignClick && (
+              <button
+                onClick={onNewCampaignClick}
+                aria-label="Choose a new campaign"
+                className={cn(
+                  'p-2 rounded-md',
+                  'bg-background/60 border border-border/60',
+                  'text-foreground',
+                  'focus:outline-none focus:ring-2 focus:ring-ring',
+                  'hover:bg-muted/20 transition-colors'
+                )}
+                title="New Campaign"
+              >
+                🗺️
+              </button>
+            )}
             <button
               onClick={onImportClick}
               aria-label="Import session"
@@ -176,6 +193,22 @@ export default function TopBar({
 
           {/* Export/Import Buttons */}
           <div className="flex items-center gap-2">
+            {onNewCampaignClick && (
+              <button
+                onClick={onNewCampaignClick}
+                aria-label="Choose a new campaign"
+                className={cn(
+                  'px-3 py-1.5 rounded-md text-sm',
+                  'bg-background/60 border border-border/60',
+                  'text-foreground',
+                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
+                  'hover:bg-muted/20 transition-colors'
+                )}
+                title="Return to campaign picker"
+              >
+                New Campaign
+              </button>
+            )}
             <button
               onClick={onImportClick}
               aria-label="Import session"

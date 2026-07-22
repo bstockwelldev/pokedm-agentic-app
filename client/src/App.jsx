@@ -10,6 +10,8 @@ import ChatTimeline from './components/ChatTimeline';
 import Composer from './components/Composer';
 import RightPanel from './components/RightPanel';
 import SessionInfoCard from './components/SessionInfoCard';
+import CampaignPicker from './components/CampaignPicker';
+import { setLastCampaignId } from './lib/campaignPreferences';
 import { renderMessage } from './lib/messageMapper';
 import { cn } from './lib/utils';
 import { filterValidModels, normalizeModelName } from './lib/modelValidator';
@@ -116,23 +118,44 @@ export default function App() {
   const [showRecapExportDrawer, setShowRecapExportDrawer] = useState(false);
   const [showImportDrawer, setShowImportDrawer] = useState(false);
   const [lastRequest, setLastRequest] = useState(null);
+  const [appPhase, setAppPhase] = useState('loading');
 
   // Compute derived state for choices (must be before functions/hooks that use it)
   const lastMessage = messages[messages.length - 1];
   const hasChoices = lastMessage?.choices && lastMessage.choices.length > 0;
   const sessionIsEmpty = isSessionEmptyForQuickActions(session);
 
-  // Initialize session and fetch models on mount
+  // Initialize session, resume saved game, or show campaign picker
   useEffect(() => {
-    // Generate or load session ID from localStorage
-    let savedSessionId = localStorage.getItem('pokedm_session_id');
-    if (!isValidUuid(savedSessionId)) {
-      savedSessionId = generateUuidV4();
-      localStorage.setItem('pokedm_session_id', savedSessionId);
-    }
-    setSessionId(savedSessionId);
+  async function bootstrapSession() {
+    const savedSessionId = localStorage.getItem('pokedm_session_id');
 
-    // Fetch available models
+    if (savedSessionId && isValidUuid(savedSessionId)) {
+      try {
+        const response = await fetch(`/api/v1/sessions/${savedSessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.session) {
+            setSessionId(savedSessionId);
+            setSession(data.session);
+            setAppPhase('chat');
+            return;
+          }
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn('[CLIENT] Failed to resume session:', err);
+        }
+      }
+
+      localStorage.removeItem('pokedm_session_id');
+    }
+
+    setSessionId(null);
+    setSession(null);
+    setAppPhase('picker');
+  }
+
     async function fetchModels() {
       try {
         const response = await fetch('/api/models');
@@ -211,8 +234,43 @@ export default function App() {
         setAvailableModels(fallbackModels);
       }
     }
+    bootstrapSession();
     fetchModels();
   }, []);
+
+  function handleCampaignSessionCreated({ sessionId: newSessionId, session: newSession, campaign }) {
+    setSessionId(newSessionId);
+    setSession(newSession);
+    localStorage.setItem('pokedm_session_id', newSessionId);
+    setLastCampaignId(campaign?.slug ?? campaign?.campaign_id ?? null);
+    setMessages([]);
+    setError(null);
+
+    const sceneDescription = newSession?.session?.scene?.description?.trim();
+    if (sceneDescription) {
+      setMessages([
+        {
+          role: 'assistant',
+          content: sceneDescription,
+          intent: 'narration',
+          choices: [],
+          steps: [],
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
+
+    setAppPhase('chat');
+  }
+
+  function handleNewCampaign() {
+    localStorage.removeItem('pokedm_session_id');
+    setSessionId(null);
+    setSession(null);
+    setMessages([]);
+    setError(null);
+    setAppPhase('picker');
+  }
 
   // Send message to agent
   async function sendMessage() {
@@ -440,6 +498,7 @@ export default function App() {
 
     // Clear any errors
     setError(null);
+    setAppPhase('chat');
   }
 
   // Handle choice selection
@@ -503,6 +562,40 @@ export default function App() {
       e.preventDefault();
       sendMessage();
     }
+  }
+
+  if (appPhase === 'loading') {
+    return (
+      <AppShell>
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex min-h-screen items-center justify-center px-6 text-muted"
+        >
+          Loading session…
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (appPhase === 'picker') {
+    return (
+      <AppShell>
+        <CampaignPicker
+          onSessionCreated={handleCampaignSessionCreated}
+          onError={(message) => setError({ message, details: null })}
+        />
+        {error && (
+          <div className="fixed bottom-4 left-1/2 z-50 w-[min(100%-2rem,32rem)] -translate-x-1/2">
+            <ErrorBanner
+              error={error.message}
+              details={error.details}
+              onDismiss={handleDismissError}
+            />
+          </div>
+        )}
+      </AppShell>
+    );
   }
 
   return (
@@ -577,6 +670,7 @@ export default function App() {
         onExportClick={() => setShowExportDrawer(true)}
         onRecapExportClick={() => setShowRecapExportDrawer(true)}
         onImportClick={() => setShowImportDrawer(true)}
+        onNewCampaignClick={handleNewCampaign}
       />
 
       {/* Main Content Area */}
