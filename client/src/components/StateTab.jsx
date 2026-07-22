@@ -21,7 +21,6 @@ export default function StateTab({ session }) {
     inventory: false,
     failSoftFlags: false,
     customPokemon: false,
-    discoveredPokemon: false,
     fullJson: false,
   });
 
@@ -110,11 +109,6 @@ export default function StateTab({ session }) {
   const getPokemonIdentifier = (pokemon) => {
     const ref = pokemon?.species_ref?.ref || pokemon?.species_ref;
     return parsePokemonRef(ref) || pokemon?.species_name || pokemon?.name || null;
-  };
-
-  const getDiscoveredPokemonIdentifier = (entry) => {
-    const ref = entry?.species_ref?.ref || entry?.species_ref;
-    return parsePokemonRef(ref) || null;
   };
 
   return (
@@ -226,39 +220,6 @@ export default function StateTab({ session }) {
               </div>
             </Section>
           )}
-
-          {/* Discovered Pokemon Section */}
-          {session.continuity?.discovered_pokemon &&
-            session.continuity.discovered_pokemon.length > 0 && (
-              <Section
-                title="Discovered Pokemon"
-                expanded={expandedSections.discoveredPokemon}
-                onToggle={() => toggleSection('discoveredPokemon')}
-              >
-                <div className="space-y-3">
-                  {session.continuity.discovered_pokemon.map((entry, idx) => {
-                    const idOrName = getDiscoveredPokemonIdentifier(entry);
-                    const fallbackLabel = entry.species_ref?.ref || `Pokemon ${idx + 1}`;
-                    return (
-                      <div
-                        key={`${entry.first_seen_session_id || 'session'}-${idx}`}
-                        className="rounded-lg border border-border/60 bg-background/60 p-3"
-                      >
-                        <PokemonMedia
-                          idOrName={idOrName}
-                          sessionId={sessionId}
-                          label={fallbackLabel}
-                          showOfficial
-                        />
-                        <div className="mt-2 text-xs text-muted">
-                          First seen: {entry.first_seen_location_id || 'Unknown location'}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Section>
-            )}
 
           {/* Encounters Section */}
           <Section
