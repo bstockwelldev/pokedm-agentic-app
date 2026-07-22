@@ -18,7 +18,7 @@ import {
   detectEncounterType,
   hasPartyPokemon,
 } from './encounterService.js';
-import logger from '../lib/logger.js';
+import { generatePolishedRecap } from './recapExportService.js';
 
 /**
  * Orchestrate agent execution based on user input
@@ -120,7 +120,7 @@ async function handleQuickActionCommand({
   characterIds,
 }) {
   if (normalizedInput === '/recap' || normalizedInput.startsWith('/recap')) {
-    return buildQuickActionResponse('recap', await generateRecap(session, model), session);
+    return buildQuickActionResponse('recap', await generatePolishedRecap(session, model), session);
   }
 
   if (normalizedInput === '/save' || normalizedInput.startsWith('/save')) {
@@ -529,128 +529,6 @@ function buildEventLogEntry(kind, summary, details) {
     summary,
     details,
   };
-}
-
-/**
- * Generate recap from session history
- * Z2-level function: orchestrates recap generation
- * @param {object} session - Session object
- * @param {string} model - Model to use
- * @returns {Promise<string>} Recap text
- */
-async function generateRecap(session, model) {
-  // Z3: Generate simple recap (data extraction)
-  const simpleRecap = generateSimpleRecap(session);
-  
-  if (simpleRecap === 'No recap data available yet. Start your adventure to build up session history!') {
-    return simpleRecap;
-  }
-  
-  try {
-    const { generateText } = await import('ai');
-    const { getModel } = await import('../lib/modelProvider.js');
-    
-    const recapPrompt = `You are a friendly narrator for a Pokémon adventure session. 
-
-The player has requested a recap of their adventure so far. Based on the following session data, create a warm, engaging recap that:
-
-1. Summarizes what has happened in the adventure
-2. Highlights key moments and discoveries
-3. Reminds them of their current situation and objectives
-4. Uses a friendly, encouraging tone suitable for all ages
-
-## Session Data
-
-${simpleRecap}
-
-Create a narrative recap (2-3 paragraphs) that brings the player back into the story.`;
-
-    const result = await generateText({
-      model: await getModel(model),
-      prompt: recapPrompt,
-      maxSteps: 1,
-    });
-    
-    return result.text;
-  } catch (error) {
-    logger.error('AI recap generation failed, using simple recap', { error: error.message, stack: error.stack });
-    return simpleRecap;
-  }
-}
-
-/**
- * Generate a simple recap from session history (fallback)
- * Z3-level function: extracts data from session
- * @param {object} session - Session object
- * @returns {string} Recap text
- */
-function generateSimpleRecap(session) {
-  const recaps = [];
-  
-  // Build recap from event log
-  if (session.session?.event_log && session.session.event_log.length > 0) {
-    const recentEvents = session.session.event_log.slice(-10); // Last 10 events
-    const eventSummaries = recentEvents
-      .filter(e => e.kind !== 'recap') // Exclude existing recaps
-      .map(e => `- ${e.summary}${e.details ? `: ${e.details}` : ''}`)
-      .join('\n');
-    
-    if (eventSummaries) {
-      recaps.push('## Recent Events\n' + eventSummaries);
-    }
-  }
-  
-  // Add existing recaps from continuity
-  if (session.continuity?.recaps && session.continuity.recaps.length > 0) {
-    const existingRecaps = session.continuity.recaps
-      .slice(-3) // Last 3 recaps
-      .map(r => r.text)
-      .join('\n\n');
-    if (existingRecaps) {
-      recaps.push('## Previous Recap\n' + existingRecaps);
-    }
-  }
-  
-  // Add timeline entries
-  if (session.continuity?.timeline && session.continuity.timeline.length > 0) {
-    const timelineEntries = session.continuity.timeline
-      .slice(-5) // Last 5 timeline entries
-      .map(t => `- ${t.summary}`)
-      .join('\n');
-    if (timelineEntries) {
-      recaps.push('## Timeline\n' + timelineEntries);
-    }
-  }
-  
-  // Add current state summary
-  const stateSummary = [];
-  if (session.session?.scene?.location_id) {
-    stateSummary.push(`**Current Location:** ${session.session.scene.location_id}`);
-  }
-  if (session.session?.scene?.description) {
-    stateSummary.push(`**Scene:** ${session.session.scene.description}`);
-  }
-  if (session.characters && session.characters.length > 0) {
-    const partySize = session.characters.reduce((sum, c) => sum + c.pokemon_party.length, 0);
-    stateSummary.push(`**Party:** ${partySize} Pokémon`);
-  }
-  if (session.session?.current_objectives && session.session.current_objectives.length > 0) {
-    const objectives = session.session.current_objectives
-      .map(o => `- ${o.description} (${o.status})`)
-      .join('\n');
-    stateSummary.push(`**Objectives:**\n${objectives}`);
-  }
-  
-  if (stateSummary.length > 0) {
-    recaps.push('## Current State\n' + stateSummary.join('\n'));
-  }
-  
-  // If no recap data available, return a message
-  if (recaps.length === 0) {
-    return 'No recap data available yet. Start your adventure to build up session history!';
-  }
-  
-  return recaps.join('\n\n');
 }
 
 export default {
